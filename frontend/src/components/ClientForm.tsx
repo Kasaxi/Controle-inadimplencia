@@ -91,9 +91,10 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
             }
 
             onSuccess();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Erro ao salvar cliente.");
+            const errMsg = error.response?.data?.error || error.message || 'Erro desconhecido';
+            toast.error(`Erro ao salvar cliente: ${errMsg}`);
         } finally {
             setLoading(false);
         }
