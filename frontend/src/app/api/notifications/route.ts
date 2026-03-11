@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabaseClient';
 import { NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -8,16 +8,19 @@ export async function GET(request: NextRequest) {
         const type = searchParams.get('type');
         const read = searchParams.get('read');
 
-        const where: any = {};
-        if (type) where.type = type;
-        if (read !== null) where.read = read === 'true';
+        let query = supabase
+            .from('Notification')
+            .select('*, client:Client(id, name, cpf)')
+            .order('read', { ascending: true })
+            .order('createdAt', { ascending: false });
 
-        const notifications = await prisma.notification.findMany({
-            where,
-            include: { client: { select: { id: true, name: true, cpf: true } } },
-            orderBy: [{ read: 'asc' }, { createdAt: 'desc' }],
-        });
-        return NextResponse.json(notifications);
+        if (type) query = query.eq('type', type);
+        if (read !== null) query = query.eq('read', read === 'true');
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return NextResponse.json(data);
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });

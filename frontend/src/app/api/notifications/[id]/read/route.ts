@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function PUT(request: Request, context: any) {
     try {
         const { id } = context.params;
-        const notification = await prisma.notification.update({
-            where: { id: String(id) },
-            data: { read: true },
-        });
-        return NextResponse.json(notification);
+        const { data, error } = await supabase
+            .from('Notification')
+            .update({ read: true })
+            .eq('id', String(id))
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json(data);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to mark notification as read' }, { status: 500 });
     }

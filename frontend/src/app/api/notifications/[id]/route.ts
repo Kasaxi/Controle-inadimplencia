@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function DELETE(request: Request, context: any) {
     try {
         const { id } = context.params;
-        await prisma.notification.delete({ where: { id: String(id) } });
+        const { error } = await supabase
+            .from('Notification')
+            .delete()
+            .eq('id', String(id));
+
+        if (error) throw error;
         return NextResponse.json({ message: 'Notification deleted' });
     } catch (error) {
         return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });

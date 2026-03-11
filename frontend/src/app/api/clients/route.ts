@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabaseClient';
 
 export async function GET() {
     try {
-        const clients = await prisma.client.findMany({
-            orderBy: { createdAt: 'desc' },
-        });
-        return NextResponse.json(clients);
-    } catch (error) {
+        const { data, error } = await supabase
+            .from('Client')
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        return NextResponse.json(data);
+    } catch (error: any) {
         console.error('Error fetching clients:', error);
         return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
     }
@@ -28,23 +31,35 @@ export async function POST(request: Request) {
             consultationDate,
         } = body;
 
-        const newClient = await prisma.client.create({
-            data: {
-                name,
-                cpf,
-                contactNumber,
-                overdueInstallments: overdueInstallments ? Number(overdueInstallments) : 0,
-                address,
-                responsible,
-                observation,
-                fileUrl,
-                consultationDate: consultationDate ? new Date(consultationDate) : null,
-            },
-        });
+        const now = new Date().toISOString();
+        const generatedId = crypto.randomUUID();
+        console.log('--- INSERTING CLIENT ---');
+        console.log('Generated ID:', generatedId, typeof generatedId);
 
-        return NextResponse.json(newClient, { status: 201 });
+        const { data, error } = await supabase
+            .from('Client')
+            .insert([{
+                "id": generatedId,
+                "name": name,
+                "cpf": cpf,
+                "contactNumber": contactNumber,
+                "overdueInstallments": overdueInstallments ? Number(overdueInstallments) : 0,
+                "address": address,
+                "responsible": responsible,
+                "observation": observation,
+                "fileUrl": fileUrl,
+                "consultationDate": consultationDate || null,
+                "createdAt": now,
+                "updatedAt": now,
+            }])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return NextResponse.json(data, { status: 201 });
     } catch (error: any) {
-        console.error('Error creating client:', error);
+        console.error('Error creating client:');
+        console.dir(error, { depth: null });
         return NextResponse.json({ error: error?.message || 'Failed to create client', details: error }, { status: 500 });
     }
 }
