@@ -6,7 +6,7 @@ import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare } from 'lucide-react';
+import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
 
@@ -21,7 +21,17 @@ export default function HomePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [clientToDelete, setClientToDelete] = useState<any>(null);
   const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState('');
+  
+  const [waContacts, setWaContacts] = useState<Array<{id: string, name: string, number: string}>>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem('caixaflow-wa-contacts');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [newWaName, setNewWaName] = useState('');
+  const [newWaNumber, setNewWaNumber] = useState('');
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,44 +140,79 @@ export default function HomePage() {
     setIsPreviewOpen(true);
   };
 
-  const generateWhatsAppReport = () => {
-    if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) {
+  const removeWaContact = (id: string) => {
+    const updated = waContacts.filter(c => c.id !== id);
+    setWaContacts(updated);
+    try { localStorage.setItem('caixaflow-wa-contacts', JSON.stringify(updated)); } catch {}
+  };
+
+  const saveWaContact = () => {
+    if (!newWaName.trim() || newWaNumber.replace(/\D/g, '').length < 10) {
+      toast.error('Preencha um nome e um número de telefone válido com DDD.');
+      return;
+    }
+    const newContact = { id: crypto.randomUUID(), name: newWaName.trim(), number: newWaNumber.trim() };
+    const updated = [...waContacts, newContact];
+    setWaContacts(updated);
+    try { localStorage.setItem('caixaflow-wa-contacts', JSON.stringify(updated)); } catch {}
+    setNewWaName('');
+    setNewWaNumber('');
+    toast.success('Contato salvo!');
+  };
+
+  const generateWhatsAppReport = (targetNumber: string, isWeb: boolean = false) => {
+    if (!targetNumber || targetNumber.replace(/\D/g, '').length < 10) {
       toast.error('Informe um número telefônico válido com DDD.');
       return;
     }
 
     const filterName = tabs.find(t => t.key === activeFilter)?.label || 'Todos';
-    let text = `📊 *Relatório Controle de Inadimplência*\n`;
-    text += `*Filtro Atual:* ${filterName}\n`;
-    text += `*Total na lista:* ${filteredClients.length} clientes\n\n`;
+    let text = `\\u{1F4CA} *Relatório Controle de Inadimplência*\\n`;
+    text = text.replace(/\\u\{([0-9A-Fa-f]+)\}/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
+    
+    // Instead of raw emojis which cause encoding issues, we use String.fromCodePoint directly.
+    const eChart = String.fromCodePoint(0x1F4CA);
+    const eUser = String.fromCodePoint(0x1F464);
+    const ePhone = String.fromCodePoint(0x1F4DE);
+    const eWarn = String.fromCodePoint(0x26A0, 0xFE0F);
+    const eCheck = String.fromCodePoint(0x2705);
+    const eMemo = String.fromCodePoint(0x1F4DD);
+
+    let msg = `${eChart} *Relatório Controle de Inadimplência*\\n`;
+    msg += `*Filtro Atual:* ${filterName}\\n`;
+    msg += `*Total na lista:* ${filteredClients.length} clientes\\n\\n`;
 
     if (filteredClients.length > 0) {
-        text += `*Lista de Clientes:*\n`;
+        msg += `*Lista de Clientes:*\\n`;
         filteredClients.forEach(c => {
-            text += `👤 *Nome:* ${c.name}\n`;
-            if (c.contactNumber) text += `📞 *Tel:* ${c.contactNumber}\n`;
+            msg += `${eUser} *Nome:* ${c.name}\\n`;
+            if (c.contactNumber) msg += `${ePhone} *Tel:* ${c.contactNumber}\\n`;
             if (c.overdueInstallments > 0) {
-                text += `⚠️ *Atraso:* ${c.overdueInstallments} parcela(s)\n`;
+                msg += `${eWarn} *Atraso:* ${c.overdueInstallments} parcela(s)\\n`;
             } else {
-                text += `✅ *Atraso:* Em dia\n`;
+                msg += `${eCheck} *Atraso:* Em dia\\n`;
             }
             if (c.observation) {
                 const obsShort = c.observation.length > 50 ? c.observation.substring(0, 50) + '...' : c.observation;
-                text += `📝 *Obs:* ${obsShort}\n`;
+                msg += `${eMemo} *Obs:* ${obsShort}\\n`;
             }
-            text += `--------------------------\n`;
+            msg += `--------------------------\\n`;
         });
     }
 
-    text += `\n_Relatório extraído pela plataforma._`;
+    msg += `\\n_Relatório extraído pela plataforma._`;
 
-    const encodedText = encodeURIComponent(text);
-    const cleanNumber = whatsappNumber.replace(/\D/g, '');
+    const encodedText = encodeURIComponent(msg);
+    const cleanNumber = targetNumber.replace(/\D/g, '');
     const finalNumber = cleanNumber.length <= 11 ? `55${cleanNumber}` : cleanNumber;
 
-    window.open(`https://wa.me/${finalNumber}?text=${encodedText}`, '_blank');
+    if (isWeb) {
+      window.open(`https://web.whatsapp.com/send?phone=${finalNumber}&text=${encodedText}`, '_blank');
+    } else {
+      window.open(`whatsapp://send?phone=${finalNumber}&text=${encodedText}`, '_blank');
+    }
+    
     setIsWhatsappModalOpen(false);
-    setWhatsappNumber('');
   };
 
   const tabs: { key: FilterTab; label: string; icon: typeof Users; count: number }[] = [
@@ -362,59 +407,116 @@ export default function HomePage() {
             </p>
             <p className="mt-2 text-sm text-red-500 font-medium">Esta ação não pode ser desfeita e todos os dados serão perdidos.</p>
           </div>
-          <div className="flex justify-end gap-3 mt-2">
-            <Button variant="outline" onClick={() => setClientToDelete(null)}>
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              className="bg-red-600 hover:bg-red-700"
-              onClick={confirmDelete}
-            >
-              Sim, excluir
-            </Button>
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-xs text-slate-400">Dica: "App" abre o programa, "Web" abre no navegador.</span>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setIsWhatsappModalOpen(false)}>
+                Fechar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* WhatsApp Report Modal */}
       <Dialog open={isWhatsappModalOpen} onOpenChange={setIsWhatsappModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-emerald-600">
-              <MessageSquare className="h-5 w-5" />
-              Gerar Relatório WhatsApp
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-slate-600 mb-4">
-              Um relatório com <strong className="text-slate-900">{filteredClients.length} cliente(s)</strong> do filtro atual (<strong className="text-slate-900">{tabs.find(t => t.key === activeFilter)?.label || 'Todos'}</strong>) será gerado. 
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
+          <div className="p-6 pb-4 bg-slate-50/50 border-b border-slate-100">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-emerald-600 text-xl">
+                <MessageSquare className="h-5 w-5" />
+                Relatório WhatsApp
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+              O relatório será gerado com <strong className="text-slate-700">{filteredClients.length} cliente(s)</strong> do filtro atual (<strong className="text-slate-700">{tabs.find(t => t.key === activeFilter)?.label || 'Todos'}</strong>). 
             </p>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Número de WhatsApp (com DDD)
-              </label>
-              <input
-                type="text"
-                placeholder="(11) 98765-4321"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-                className="w-full flex h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && generateWhatsAppReport()}
-              />
-            </div>
           </div>
-          <div className="flex justify-end gap-3 mt-2">
-            <Button variant="outline" onClick={() => setIsWhatsappModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={generateWhatsAppReport}
-            >
-              Gerar e Enviar
-            </Button>
+
+          <div className="p-6 pt-4 max-h-[60vh] overflow-y-auto">
+            <div className="mb-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Contatos Salvos</h4>
+              {waContacts.length === 0 ? (
+                <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-sm text-slate-400">Nenhum contato salvo ainda.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {waContacts.map(contact => (
+                    <div key={contact.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border border-slate-200 bg-white hover:border-emerald-200 hover:shadow-sm transition-all group">
+                      <div className="mb-2 sm:mb-0">
+                        <p className="font-semibold text-slate-800 text-sm">{contact.name}</p>
+                        <p className="font-mono text-xs text-slate-500">{contact.number}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                          onClick={() => removeWaContact(contact.id)}
+                          title="Remover contato"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <div className="flex gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 px-2"
+                            onClick={() => generateWhatsAppReport(contact.number, true)}
+                            title="Abrir no navegador (WhatsApp Web)"
+                          >
+                            Web
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 text-white hover:bg-emerald-700 border-0 px-2"
+                            onClick={() => generateWhatsAppReport(contact.number, false)}
+                            title="Abrir no aplicativo nativo"
+                          >
+                            App
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                <PlusCircle className="w-3.5 h-3.5" /> Adicionar Contato
+              </h4>
+              <div className="space-y-3">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Nome do contato (ex: Diretoria)"
+                    value={newWaName}
+                    onChange={(e) => setNewWaName(e.target.value)}
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="(11) 98765-4321"
+                    value={newWaNumber}
+                    onChange={(e) => setNewWaNumber(e.target.value)}
+                    className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
+                    onKeyDown={(e) => e.key === 'Enter' && saveWaContact()}
+                  />
+                  <Button
+                    variant="outline"
+                    className="h-9 px-3 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 border-slate-200"
+                    onClick={saveWaContact}
+                  >
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
