@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function PUT(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const { id } = await context.params;
         const updateData = await request.json();
 
         if (updateData.overdueInstallments !== undefined) {
@@ -36,15 +36,16 @@ export async function PUT(request: Request, context: any) {
 
         if (error) throw error;
         return NextResponse.json(data);
-    } catch (error) {
-        console.error('Error updating client:', error);
-        return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+    } catch (error: any) {
+        console.error('--- ERROR UPDATING CLIENT ---');
+        console.dir(error, { depth: null });
+        return NextResponse.json({ error: 'Failed to update client', details: error }, { status: 500 });
     }
 }
 
 export async function DELETE(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const { id } = await context.params;
         const { error } = await supabase
             .from('Client')
             .delete()

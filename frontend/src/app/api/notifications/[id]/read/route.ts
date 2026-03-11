@@ -3,11 +3,11 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function PUT(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const { id } = await context.params;
         const { data, error } = await supabase
             .from('Notification')
             .update({ read: true })
-            .eq('id', String(id))
+            .eq('"id"', String(id))
             .select()
             .single();
 
