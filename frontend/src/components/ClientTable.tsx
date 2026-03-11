@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import { updateClient } from '@/services/api';
 import { toast } from 'sonner';
 
@@ -40,6 +40,7 @@ interface ClientTableProps {
     onEdit: (client: Client) => void;
     onViewContract: (url: string) => void;
     onRefresh?: () => void;
+    onDelete?: (client: Client) => void;
 }
 
 type SortKey = keyof Client;
@@ -59,7 +60,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     actions: 100,
 };
 
-export function ClientTable({ clients, onEdit, onViewContract, onRefresh }: ClientTableProps) {
+export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDelete }: ClientTableProps) {
     const [sortKey, setSortKey] = useState<SortKey | null>(null);
     const [sortDir, setSortDir] = useState<SortDir>('asc');
     const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
@@ -318,9 +319,16 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh }: Clie
                                 </td>
                                 {/* Ações */}
                                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                                    <Button variant="outline" size="sm" onClick={() => onEdit(client)} className="text-xs">
-                                        Atualizar
-                                    </Button>
+                                    <div className="flex justify-end gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => onEdit(client)} className="text-xs">
+                                            Atualizar
+                                        </Button>
+                                        {onDelete && (
+                                            <Button variant="outline" size="icon" onClick={() => onDelete(client)} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 flex-shrink-0 w-8 h-8" title="Excluir Cliente">
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))

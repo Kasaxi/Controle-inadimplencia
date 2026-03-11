@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
-import { getClients } from '@/services/api';
+import { getClients, deleteClient } from '@/services/api';
 import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck } from 'lucide-react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
@@ -100,6 +100,21 @@ export default function HomePage() {
   const handleFormSuccess = () => {
     handleCloseForm();
     fetchClients();
+  };
+
+  const handleDelete = async (client: any) => {
+    if (window.confirm(`⚠️ Atenção: Tem certeza que deseja excluir DEIFINITIVAMENTE o cliente "${client.name}"?\nEsta ação não pode ser desfeita.`)) {
+      try {
+        setLoading(true);
+        await deleteClient(client.id);
+        toast.success(`Cliente ${client.name} excluído com sucesso!`);
+        fetchClients();
+      } catch (error: any) {
+        console.error('Error deleting client:', error);
+        toast.error(`Erro ao excluir: ${error?.response?.data?.error || error.message || 'Desconhecido'}`);
+        setLoading(false);
+      }
+    }
   };
 
   const handleViewContract = (url: string) => {
@@ -254,6 +269,7 @@ export default function HomePage() {
             <ClientTable
               clients={filteredClients}
               onEdit={handleOpenForm}
+              onDelete={handleDelete}
               onViewContract={handleViewContract}
               onRefresh={fetchClients}
             />
