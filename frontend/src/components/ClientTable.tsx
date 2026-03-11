@@ -57,7 +57,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     consultationDate: 140,
     observation: 200,
     fileUrl: 120,
-    actions: 100,
+    actions: 140,
 };
 
 export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDelete }: ClientTableProps) {
@@ -66,7 +66,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
     const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
         if (typeof window === 'undefined') return { ...DEFAULT_WIDTHS };
         try {
-            const saved = localStorage.getItem('caixaflow-col-widths');
+            const saved = localStorage.getItem('caixaflow-col-widths-v2');
             if (saved) return { ...DEFAULT_WIDTHS, ...JSON.parse(saved) };
         } catch { }
         return { ...DEFAULT_WIDTHS };
@@ -124,7 +124,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
             document.body.style.userSelect = '';
             // Persist column widths
             setColWidths(current => {
-                try { localStorage.setItem('caixaflow-col-widths', JSON.stringify(current)); } catch { }
+                try { localStorage.setItem('caixaflow-col-widths-v2', JSON.stringify(current)); } catch { }
                 return current;
             });
         };
