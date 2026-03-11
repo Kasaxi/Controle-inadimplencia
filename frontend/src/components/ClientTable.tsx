@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpDown, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2 } from 'lucide-react';
 import { updateClient } from '@/services/api';
 import { toast } from 'sonner';
 
@@ -73,6 +73,97 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
     });
     const [editingParcel, setEditingParcel] = useState<string | null>(null);
     const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+
+    const [editingCell, setEditingCell] = useState<{ id: string; key: SortKey } | null>(null);
+    const [editValue, setEditValue] = useState('');
+
+    const handleCellDoubleClick = (client: Client, key: SortKey) => {
+        setEditingCell({ id: client.id, key });
+        let val = client[key] || '';
+        if (key === 'consultationDate' && val) {
+            val = String(val).split('T')[0];
+        }
+        setEditValue(String(val));
+    };
+
+    const handleCellSave = async (client: Client, key: SortKey) => {
+        if (!editingCell) return;
+        const newVal = editValue.trim();
+        const oldValRaw = client[key] || '';
+        
+        let oldValComp = String(oldValRaw).trim();
+        if (key === 'consultationDate' && oldValRaw) {
+             oldValComp = String(oldValRaw).split('T')[0];
+        }
+
+        setEditingCell(null);
+        if (newVal === oldValComp) return;
+
+        try {
+            let saveVal: any = newVal;
+            if (key === 'cpf' || key === 'contactNumber') {
+                 saveVal = newVal.replace(/\D/g, '');
+            }
+            if (key === 'consultationDate' && !saveVal) {
+                 saveVal = null;
+            }
+
+            await updateClient(String(client.id), { [key]: saveVal });
+            toast.success("Atualizado com sucesso!");
+            onRefresh?.();
+        } catch {
+            toast.error("Erro ao atualizar campo.");
+        }
+    };
+
+    const handleCellKeyDown = (e: React.KeyboardEvent, client: Client, key: SortKey) => {
+        if (e.key === 'Enter') handleCellSave(client, key);
+        else if (e.key === 'Escape') setEditingCell(null);
+    };
+
+    const renderCell = (client: Client, key: SortKey, displayValue: React.ReactNode, type: 'text' | 'date' | 'textarea' = 'text') => {
+        const isEditing = editingCell?.id === client.id && editingCell?.key === key;
+
+        if (isEditing) {
+            const commonClasses = "w-full text-xs p-1 border border-blue-400 rounded outline-none focus:ring-2 focus:ring-blue-200 bg-white text-slate-900";
+            if (type === 'textarea') {
+                return (
+                    <textarea
+                        autoFocus
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => handleCellSave(client, key)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Escape') setEditingCell(null);
+                        }}
+                        className={`${commonClasses} resize-none min-h-[40px]`}
+                        rows={2}
+                    />
+                );
+            }
+            return (
+                <input
+                    type={type}
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => handleCellSave(client, key)}
+                    onKeyDown={(e) => handleCellKeyDown(e, client, key)}
+                    className={commonClasses}
+                />
+            );
+        }
+
+        return (
+            <div
+                onDoubleClick={() => handleCellDoubleClick(client, key)}
+                className="w-full h-full min-h-[24px] flex items-center cursor-text group/cell rounded hover:bg-black/5 px-1 -mx-1 transition-colors"
+                title="Dê um duplo clique para editar"
+            >
+                {displayValue}
+            </div>
+        );
+    };
 
     const resizingCol = useRef<string | null>(null);
     const startX = useRef(0);
@@ -218,19 +309,19 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                             <tr key={client.id} className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors">
                                 {/* Cliente - Sticky */}
                                 <td className="sticky left-0 z-10 bg-white px-4 py-3 font-medium text-slate-900 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] border-r border-slate-200/60 overflow-hidden text-ellipsis">
-                                    {client.name}
+                                    {renderCell(client, 'name', client.name)}
                                 </td>
                                 {/* CPF */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap font-mono text-xs border-r border-slate-200/60 overflow-hidden text-ellipsis">
-                                    {displayCPF(client.cpf)}
+                                    {renderCell(client, 'cpf', displayCPF(client.cpf))}
                                 </td>
                                 {/* Contato */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap border-r border-slate-200/60 overflow-hidden text-ellipsis">
-                                    {client.contactNumber ? displayPhone(client.contactNumber) : '-'}
+                                    {renderCell(client, 'contactNumber', client.contactNumber ? displayPhone(client.contactNumber) : '-')}
                                 </td>
                                 {/* Responsável */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap border-r border-slate-200/60 overflow-hidden text-ellipsis">
-                                    {client.responsible || '-'}
+                                    {renderCell(client, 'responsible', client.responsible || '-')}
                                 </td>
                                 {/* Parcelas - Fixed Popover Edit */}
                                 <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60">
@@ -297,15 +388,15 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                 </td>
                                 {/* Última Consulta */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap border-r border-slate-200/60">
-                                    {client.consultationDate
-                                        ? format(new Date(client.consultationDate), "dd/MM/yyyy", { locale: ptBR })
-                                        : '-'}
+                                    {renderCell(client, 'consultationDate', client.consultationDate ? format(new Date(client.consultationDate), "dd/MM/yyyy", { locale: ptBR }) : '-', 'date')}
                                 </td>
                                 {/* Observações */}
                                 <td className="px-4 py-3 text-slate-600 border-r border-slate-200/60 overflow-hidden">
-                                    <span className="line-clamp-2 text-xs" title={client.observation || ''}>
-                                        {client.observation || <span className="text-slate-300 italic">—</span>}
-                                    </span>
+                                    {renderCell(client, 'observation', (
+                                        <span className="line-clamp-2 text-xs" title={client.observation || ''}>
+                                            {client.observation || <span className="text-slate-300 italic">—</span>}
+                                        </span>
+                                    ), 'textarea')}
                                 </td>
                                 {/* Contrato */}
                                 <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60">
@@ -320,8 +411,8 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                 {/* Ações */}
                                 <td className="px-4 py-3 text-right whitespace-nowrap">
                                     <div className="flex justify-end gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => onEdit(client)} className="text-xs">
-                                            Atualizar
+                                        <Button variant="outline" size="icon" onClick={() => onEdit(client)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-100 flex-shrink-0 w-8 h-8" title="Editar Cliente">
+                                            <Edit2 className="w-4 h-4" />
                                         </Button>
                                         {onDelete && (
                                             <Button variant="outline" size="icon" onClick={() => onDelete(client)} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100 flex-shrink-0 w-8 h-8" title="Excluir Cliente">

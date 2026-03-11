@@ -154,7 +154,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {/* ─── Main Content ─── */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 z-10">
+                <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 z-50 relative">
                     <div>
                         <h2 className="text-base font-semibold text-slate-800">{pageTitle}</h2>
                     </div>

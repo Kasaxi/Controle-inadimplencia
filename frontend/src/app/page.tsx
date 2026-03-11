@@ -190,9 +190,10 @@ export default function HomePage() {
           <button
             key={kpi.title}
             onClick={() => setActiveFilter(kpi.filter)}
-            className="text-left group"
+            className="text-left group cursor-pointer focus:outline-none"
+            title={`Filtrar por ${kpi.title}`}
           >
-            <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.gradient} p-5 shadow-lg ${kpi.shadowColor} transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${activeFilter === kpi.filter ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-slate-50 scale-[1.02]' : ''}`}>
+            <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.gradient} p-5 shadow-lg ${kpi.shadowColor} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:brightness-105 active:scale-95 ${activeFilter === kpi.filter ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-slate-50 scale-[1.02] shadow-xl' : ''}`}>
               {/* Decorative circles */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full" />
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/5 rounded-full" />
