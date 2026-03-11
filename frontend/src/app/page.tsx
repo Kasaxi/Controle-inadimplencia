@@ -6,7 +6,7 @@ import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck } from 'lucide-react';
+import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
 
@@ -19,6 +19,9 @@ export default function HomePage() {
   const [currentClient, setCurrentClient] = useState<any>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<any>(null);
+  const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,24 +105,69 @@ export default function HomePage() {
     fetchClients();
   };
 
-  const handleDelete = async (client: any) => {
-    if (window.confirm(`⚠️ Atenção: Tem certeza que deseja excluir DEIFINITIVAMENTE o cliente "${client.name}"?\nEsta ação não pode ser desfeita.`)) {
-      try {
-        setLoading(true);
-        await deleteClient(client.id);
-        toast.success(`Cliente ${client.name} excluído com sucesso!`);
-        fetchClients();
-      } catch (error: any) {
-        console.error('Error deleting client:', error);
-        toast.error(`Erro ao excluir: ${error?.response?.data?.error || error.message || 'Desconhecido'}`);
-        setLoading(false);
-      }
+  const confirmDelete = async () => {
+    if (!clientToDelete) return;
+
+    try {
+      setLoading(true);
+      await deleteClient(clientToDelete.id);
+      toast.success(`Cliente ${clientToDelete.name} excluído com sucesso!`);
+      setClientToDelete(null);
+      fetchClients();
+    } catch (error: any) {
+      console.error('Error deleting client:', error);
+      toast.error(`Erro ao excluir: ${error?.response?.data?.error || error.message || 'Desconhecido'}`);
+      setLoading(false);
     }
+  };
+
+  const handleDeleteClick = (client: any) => {
+      setClientToDelete(client);
   };
 
   const handleViewContract = (url: string) => {
     setPreviewUrl(url);
     setIsPreviewOpen(true);
+  };
+
+  const generateWhatsAppReport = () => {
+    if (!whatsappNumber || whatsappNumber.replace(/\D/g, '').length < 10) {
+      toast.error('Informe um número telefônico válido com DDD.');
+      return;
+    }
+
+    const filterName = tabs.find(t => t.key === activeFilter)?.label || 'Todos';
+    let text = `📊 *Relatório Controle de Inadimplência*\n`;
+    text += `*Filtro Atual:* ${filterName}\n`;
+    text += `*Total na lista:* ${filteredClients.length} clientes\n\n`;
+
+    if (filteredClients.length > 0) {
+        text += `*Lista de Clientes:*\n`;
+        filteredClients.forEach(c => {
+            text += `👤 *Nome:* ${c.name}\n`;
+            if (c.contactNumber) text += `📞 *Tel:* ${c.contactNumber}\n`;
+            if (c.overdueInstallments > 0) {
+                text += `⚠️ *Atraso:* ${c.overdueInstallments} parcela(s)\n`;
+            } else {
+                text += `✅ *Atraso:* Em dia\n`;
+            }
+            if (c.observation) {
+                const obsShort = c.observation.length > 50 ? c.observation.substring(0, 50) + '...' : c.observation;
+                text += `📝 *Obs:* ${obsShort}\n`;
+            }
+            text += `--------------------------\n`;
+        });
+    }
+
+    text += `\n_Relatório extraído pela plataforma._`;
+
+    const encodedText = encodeURIComponent(text);
+    const cleanNumber = whatsappNumber.replace(/\D/g, '');
+    const finalNumber = cleanNumber.length <= 11 ? `55${cleanNumber}` : cleanNumber;
+
+    window.open(`https://wa.me/${finalNumber}?text=${encodedText}`, '_blank');
+    setIsWhatsappModalOpen(false);
+    setWhatsappNumber('');
   };
 
   const tabs: { key: FilterTab; label: string; icon: typeof Users; count: number }[] = [
@@ -178,10 +226,16 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Acompanhamento</h1>
           <p className="text-sm text-slate-500 mt-0.5">Gestão de parcelas e contratos dos clientes da Caixa.</p>
         </div>
-        <Button onClick={() => handleOpenForm()} className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20 transition-all text-white border-0 rounded-xl px-5">
-          <PlusCircle className="h-4 w-4" />
-          Novo Cliente
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={() => setIsWhatsappModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
+            <MessageSquare className="h-4 w-4" />
+            Relatório
+          </Button>
+          <Button onClick={() => handleOpenForm()} className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20 transition-all text-white border-0 rounded-xl px-5">
+            <PlusCircle className="h-4 w-4" />
+            Novo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -270,7 +324,7 @@ export default function HomePage() {
             <ClientTable
               clients={filteredClients}
               onEdit={handleOpenForm}
-              onDelete={handleDelete}
+              onDelete={handleDeleteClick}
               onViewContract={handleViewContract}
               onRefresh={fetchClients}
             />
@@ -289,6 +343,79 @@ export default function HomePage() {
             onSuccess={handleFormSuccess}
             onCancel={handleCloseForm}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Confirmar exclusão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-slate-600 leading-relaxed">
+            <p>
+              Tem certeza que deseja excluir <strong>definitivamente</strong> o cliente{" "}
+              <span className="font-semibold text-slate-800">{clientToDelete?.name}</span>?
+            </p>
+            <p className="mt-2 text-sm text-red-500 font-medium">Esta ação não pode ser desfeita e todos os dados serão perdidos.</p>
+          </div>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={() => setClientToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={confirmDelete}
+            >
+              Sim, excluir
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp Report Modal */}
+      <Dialog open={isWhatsappModalOpen} onOpenChange={setIsWhatsappModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-600">
+              <MessageSquare className="h-5 w-5" />
+              Gerar Relatório WhatsApp
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-slate-600 mb-4">
+              Um relatório com <strong className="text-slate-900">{filteredClients.length} cliente(s)</strong> do filtro atual (<strong className="text-slate-900">{tabs.find(t => t.key === activeFilter)?.label || 'Todos'}</strong>) será gerado. 
+            </p>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Número de WhatsApp (com DDD)
+              </label>
+              <input
+                type="text"
+                placeholder="(11) 98765-4321"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                className="w-full flex h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && generateWhatsAppReport()}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={() => setIsWhatsappModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={generateWhatsAppReport}
+            >
+              Gerar e Enviar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
