@@ -178,29 +178,29 @@ export default function HomePage() {
     const eCheck = String.fromCodePoint(0x2705);
     const eMemo = String.fromCodePoint(0x1F4DD);
 
-    let msg = `${eChart} *Relatório Controle de Inadimplência*\\n`;
-    msg += `*Filtro Atual:* ${filterName}\\n`;
-    msg += `*Total na lista:* ${filteredClients.length} clientes\\n\\n`;
+    let msg = `${eChart} *Relatório Controle de Inadimplência*\n`;
+    msg += `*Filtro Atual:* ${filterName}\n`;
+    msg += `*Total na lista:* ${filteredClients.length} clientes\n\n`;
 
     if (filteredClients.length > 0) {
-        msg += `*Lista de Clientes:*\\n`;
+        msg += `*Lista de Clientes:*\n`;
         filteredClients.forEach(c => {
-            msg += `${eUser} *Nome:* ${c.name}\\n`;
-            if (c.contactNumber) msg += `${ePhone} *Tel:* ${c.contactNumber}\\n`;
+            msg += `${eUser} *Nome:* ${c.name}\n`;
+            if (c.contactNumber) msg += `${ePhone} *Tel:* ${c.contactNumber}\n`;
             if (c.overdueInstallments > 0) {
-                msg += `${eWarn} *Atraso:* ${c.overdueInstallments} parcela(s)\\n`;
+                msg += `${eWarn} *Atraso:* ${c.overdueInstallments} parcela(s)\n`;
             } else {
-                msg += `${eCheck} *Atraso:* Em dia\\n`;
+                msg += `${eCheck} *Atraso:* Em dia\n`;
             }
             if (c.observation) {
                 const obsShort = c.observation.length > 50 ? c.observation.substring(0, 50) + '...' : c.observation;
-                msg += `${eMemo} *Obs:* ${obsShort}\\n`;
+                msg += `${eMemo} *Obs:* ${obsShort}\n`;
             }
-            msg += `--------------------------\\n`;
+            msg += `--------------------------\n`;
         });
     }
 
-    msg += `\\n_Relatório extraído pela plataforma._`;
+    msg += `\n_Relatório extraído pela plataforma._`;
 
     const encodedText = encodeURIComponent(msg);
     const cleanNumber = targetNumber.replace(/\D/g, '');
