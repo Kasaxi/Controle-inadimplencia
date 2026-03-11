@@ -10,12 +10,26 @@ export async function PUT(request: Request, context: any) {
             updateData.overdueInstallments = Number(updateData.overdueInstallments);
         }
 
+        if (updateData.consultationDate) {
+            updateData.consultationDate = new Date(updateData.consultationDate).toISOString();
+        }
+
+        // Map the payload to strictly quoted keys for Prisma-created SQL column compatibility
+        const mappedUpdate: any = {
+            "updatedAt": new Date().toISOString()
+        };
+        
+        const validKeys = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus'];
+        
+        validKeys.forEach(key => {
+            if (updateData[key] !== undefined) {
+                mappedUpdate[String(key)] = updateData[key];
+            }
+        });
+
         const { data, error } = await supabase
             .from('Client')
-            .update({
-                ...updateData,
-                updatedAt: new Date().toISOString()
-            })
+            .update(mappedUpdate)
             .eq('id', String(id))
             .select()
             .single();
