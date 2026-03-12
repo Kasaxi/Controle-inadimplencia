@@ -6,7 +6,7 @@ import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2 } from 'lucide-react';
+import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
 
@@ -272,6 +272,16 @@ export default function HomePage() {
           <p className="text-sm text-slate-500 mt-0.5">Gestão de parcelas e contratos dos clientes da Caixa.</p>
         </div>
         <div className="flex gap-3">
+          <Button 
+            variant="outline"
+            size="icon"
+            onClick={() => fetchClients()}
+            disabled={loading}
+            className="w-10 h-10 rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all group"
+            title="Atualizar dados"
+          >
+            <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
           <Button onClick={() => setIsWhatsappModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
             <MessageSquare className="h-4 w-4" />
             Relatório
