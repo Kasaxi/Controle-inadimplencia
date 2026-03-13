@@ -1,4 +1,4 @@
-const STORAGE_KEY = "caixaflow-settings";
+const STORAGE_KEY = "contr-inad-settings";
 
 export interface AppSettings {
     criticalThreshold: number;

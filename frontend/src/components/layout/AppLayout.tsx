@@ -25,7 +25,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
-        const saved = localStorage.getItem('caixaflow-sidebar-collapsed');
+        const saved = localStorage.getItem('contr-inad-sidebar-collapsed');
         if (saved === 'true') setCollapsed(true);
     }, []);
 
@@ -51,11 +51,11 @@ export function AppLayout({ children }: AppLayoutProps) {
         const interval = setInterval(loadNotifications, 5 * 60 * 1000);
 
         const handleUpdate = () => loadNotifications();
-        window.addEventListener('caixaflow-notifications-updated', handleUpdate);
+        window.addEventListener('contr-inad-notifications-updated', handleUpdate);
 
         return () => {
             clearInterval(interval);
-            window.removeEventListener('caixaflow-notifications-updated', handleUpdate);
+            window.removeEventListener('contr-inad-notifications-updated', handleUpdate);
         };
     }, []);
 
@@ -64,7 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         '/configuracoes': 'Configurações',
         '/notificacoes': 'Notificações',
     };
-    const pageTitle = pageTitles[pathname] || 'CaixaFlow';
+    const pageTitle = pageTitles[pathname] || 'Controle de Inadimplências';
 
     return (
         <div className="flex h-screen bg-slate-50">
@@ -83,7 +83,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                         <div className="flex items-center gap-3">
                             {collapsed ? (
                                 <button
-                                    onClick={() => { setCollapsed(false); localStorage.setItem('caixaflow-sidebar-collapsed', 'false'); }}
+                                    onClick={() => { setCollapsed(false); localStorage.setItem('contr-inad-sidebar-collapsed', 'false'); }}
                                     className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white shrink-0 hover:from-blue-400 hover:to-cyan-300 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
                                     title="Expandir menu"
                                 >
@@ -96,14 +96,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                             )}
                             {!collapsed && (
                                 <div>
-                                    <span className="text-white font-bold text-lg tracking-tight">CaixaFlow</span>
+                                    <span className="text-white font-bold text-lg tracking-tight">Controle de Inadimplências</span>
                                     <p className="text-[10px] text-slate-400 uppercase tracking-[0.15em] font-medium -mt-0.5">Controle</p>
                                 </div>
                             )}
                         </div>
                         {!collapsed && (
                             <button
-                                onClick={() => { setCollapsed(true); localStorage.setItem('caixaflow-sidebar-collapsed', 'true'); }}
+                                onClick={() => { setCollapsed(true); localStorage.setItem('contr-inad-sidebar-collapsed', 'true'); }}
                                 className="p-1.5 text-slate-500 hover:text-slate-300 hover:bg-white/5 rounded-lg transition-colors"
                                 title="Recolher menu"
                             >

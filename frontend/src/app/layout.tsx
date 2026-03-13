@@ -9,8 +9,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'CaixaFlow — Controle de Inadimplência',
-  description: 'Gestão inteligente de clientes e financiamentos',
+  title: 'Controle de Inadimplências',
+  description: 'Gestão de parcelas e contratos dos clientes da Caixa.',
 };
 
 import { AppLayout } from '@/components/layout/AppLayout';

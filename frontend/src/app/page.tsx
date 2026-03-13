@@ -25,7 +25,7 @@ export default function HomePage() {
   const [waContacts, setWaContacts] = useState<Array<{id: string, name: string, number: string}>>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('caixaflow-wa-contacts');
+      const saved = localStorage.getItem('contr-inad-wa-contacts');
       if (saved) return JSON.parse(saved);
     } catch {}
     return [];
@@ -143,7 +143,7 @@ export default function HomePage() {
   const removeWaContact = (id: string) => {
     const updated = waContacts.filter(c => c.id !== id);
     setWaContacts(updated);
-    try { localStorage.setItem('caixaflow-wa-contacts', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('contr-inad-wa-contacts', JSON.stringify(updated)); } catch {}
   };
 
   const saveWaContact = () => {
@@ -154,7 +154,7 @@ export default function HomePage() {
     const newContact = { id: crypto.randomUUID(), name: newWaName.trim(), number: newWaNumber.trim() };
     const updated = [...waContacts, newContact];
     setWaContacts(updated);
-    try { localStorage.setItem('caixaflow-wa-contacts', JSON.stringify(updated)); } catch {}
+    try { localStorage.setItem('contr-inad-wa-contacts', JSON.stringify(updated)); } catch {}
     setNewWaName('');
     setNewWaNumber('');
     toast.success('Contato salvo!');
@@ -417,13 +417,23 @@ export default function HomePage() {
             </p>
             <p className="mt-2 text-sm text-red-500 font-medium">Esta ação não pode ser desfeita e todos os dados serão perdidos.</p>
           </div>
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-xs text-slate-400">Dica: "App" abre o programa, "Web" abre no navegador.</span>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setIsWhatsappModalOpen(false)}>
-                Fechar
-              </Button>
-            </div>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setClientToDelete(null)} 
+              disabled={loading}
+              className="rounded-xl px-4"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 rounded-xl px-4"
+            >
+              {loading ? 'Excluindo...' : 'Excluir Cliente'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

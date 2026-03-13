@@ -31,7 +31,7 @@ export const deleteClient = async (id: string) => {
 // Event trigger
 const triggerNotificationUpdate = () => {
     if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('caixaflow-notifications-updated'));
+        window.dispatchEvent(new Event('contr-inad-notifications-updated'));
     }
 };
 
