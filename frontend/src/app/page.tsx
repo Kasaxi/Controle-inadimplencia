@@ -543,7 +543,7 @@ export default function HomePage() {
 
       {/* Contract Viewer - Fullscreen Overlay */}
       {isPreviewOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#1a1a2e]">
+        <div className="fixed inset-0 z-[60] flex flex-col bg-[#1a1a2e]">
           <div className="flex justify-between items-center px-6 py-3 bg-[#111827] text-white shrink-0 shadow-lg">
             <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-200">Visualizador de Documento</h2>
             <button
