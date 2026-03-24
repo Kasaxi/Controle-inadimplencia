@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getNotifications, markNotificationAsRead, markNotificationAsUnread, markAllNotificationsAsRead, deleteNotification, generateNotifications as apiGenerateNotifications } from '@/services/api';
-import { Bell, AlertTriangle, AlertCircle, Info, CheckCheck, Trash2, RefreshCw, Filter, ExternalLink, EyeOff } from 'lucide-react';
+import { Bell, AlertTriangle, AlertCircle, Info, CheckCheck, Trash2, RefreshCw, ExternalLink, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast, Toaster } from 'sonner';
 
@@ -277,7 +277,7 @@ export default function NotificacoesPage() {
                         <div className="p-12 text-center">
                             <Bell className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                             <p className="text-slate-500 font-medium">Nenhuma notificação encontrada</p>
-                            <p className="text-sm text-slate-400 mt-1">Clique em "Verificar Novos" para gerar alertas.</p>
+                            <p className="text-sm text-slate-400 mt-1">Clique em &quot;Verificar Novos&quot; para gerar alertas.</p>
                         </div>
                     ) : (
                         filtered.map(notification => {

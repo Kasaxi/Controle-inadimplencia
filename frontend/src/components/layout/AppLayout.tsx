@@ -5,7 +5,8 @@ import { LayoutDashboard, FileText, Settings, LogOut, PanelLeftClose, PanelLeft,
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationPanel } from "@/components/NotificationPanel";
-import { getClients, getUnreadCount, getNotifications } from "@/services/api";
+import { getUnreadCount, getNotifications } from "@/services/api";
+import type { Notification } from "@/types";
 
 interface AppLayoutProps {
     children: ReactNode;
@@ -18,16 +19,16 @@ function getGreeting(): string {
     return "Boa noite";
 }
 
+function getInitialCollapsed(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('contr-inad-sidebar-collapsed') === 'true';
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
     const pathname = usePathname();
-    const [collapsed, setCollapsed] = useState(false);
-    const [notifications, setNotifications] = useState<any[]>([]);
+    const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-
-    useEffect(() => {
-        const saved = localStorage.getItem('contr-inad-sidebar-collapsed');
-        if (saved === 'true') setCollapsed(true);
-    }, []);
 
     const navItems = [
         { name: "Acompanhamento", href: "/", icon: LayoutDashboard },

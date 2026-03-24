@@ -7,9 +7,10 @@ import { createClient, updateClient } from '@/services/api';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import type { ClientCreateInput, ClientUpdateInput } from '@/types';
 
 interface ClientFormProps {
-    initialData?: Record<string, any>;
+    initialData?: (Partial<ClientCreateInput> & { id?: string }) | null;
     onSuccess: () => void;
     onCancel: () => void;
 }
@@ -52,15 +53,15 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
 
         try {
             const formData = new FormData(e.currentTarget);
-            const data = {
-                name: formData.get('name'),
+            const clientData: ClientCreateInput | ClientUpdateInput = {
+                name: String(formData.get('name') ?? ''),
                 cpf: rawCpf,
-                contactNumber: stripMask(phone),
-                overdueInstallments: formData.get('overdueInstallments'),
-                address: formData.get('address'),
-                responsible: formData.get('responsible'),
-                observation: formData.get('observation'),
-                consultationDate: formData.get('consultationDate'),
+                contactNumber: stripMask(phone) || null,
+                overdueInstallments: Number(formData.get('overdueInstallments') ?? 0),
+                address: String(formData.get('address') ?? '') || null,
+                responsible: String(formData.get('responsible') ?? '') || null,
+                observation: String(formData.get('observation') ?? '') || null,
+                consultationDate: String(formData.get('consultationDate') || '') || null,
                 fileUrl: initialData?.fileUrl || null,
             };
 
@@ -79,21 +80,22 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
                     .from('contracts')
                     .getPublicUrl(filePath);
 
-                data.fileUrl = publicUrl;
+                clientData.fileUrl = publicUrl;
             }
 
             if (initialData?.id) {
-                await updateClient(String(initialData.id), data);
+                await updateClient(String(initialData.id), clientData as ClientUpdateInput);
                 toast.success("Cliente atualizado com sucesso!");
             } else {
-                await createClient(data);
+                await createClient(clientData as ClientCreateInput);
                 toast.success("Cliente registrado com sucesso!");
             }
 
             onSuccess();
-        } catch (error: any) {
+        } catch (error) {
             console.error(error);
-            const errMsg = error.response?.data?.error || error.message || 'Erro desconhecido';
+            const err = error as Error & { response?: { data?: { error?: string } } };
+            const errMsg = err.response?.data?.error || err.message || 'Erro desconhecido';
             toast.error(`Erro ao salvar cliente: ${errMsg}`);
         } finally {
             setLoading(false);
@@ -136,15 +138,15 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="address">Endereço</Label>
-                    <Input id="address" name="address" defaultValue={initialData?.address} />
+                    <Input id="address" name="address" defaultValue={initialData?.address ?? ''} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="responsible">Responsável</Label>
-                    <Input id="responsible" name="responsible" defaultValue={initialData?.responsible} />
+                    <Input id="responsible" name="responsible" defaultValue={initialData?.responsible ?? ''} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="consultationDate">Data da Consulta Manual</Label>
-                    <Input id="consultationDate" name="consultationDate" type="date" defaultValue={initialData?.consultationDate?.split('T')[0]} />
+                    <Input id="consultationDate" name="consultationDate" type="date" defaultValue={initialData?.consultationDate?.split('T')[0] ?? ''} />
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="file">Contrato (PDF ou Imagem) {initialData?.fileUrl && '(Novo arquivo substituirá atual)'}</Label>
@@ -152,7 +154,7 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="observation">Observações</Label>
-                    <Textarea id="observation" name="observation" rows={3} defaultValue={initialData?.observation} />
+                    <Textarea id="observation" name="observation" rows={3} defaultValue={initialData?.observation ?? ''} />
                 </div>
             </div>
 
@@ -168,4 +170,3 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
         </form>
     );
 }
-

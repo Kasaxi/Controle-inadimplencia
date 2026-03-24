@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Client, ClientCreateInput, ClientUpdateInput, Notification, NotificationFilters } from '@/types';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || '/api',
@@ -8,24 +9,23 @@ const api = axios.create({
 });
 
 // Clients
-export const getClients = async () => {
-    const { data } = await api.get('/clients');
+export const getClients = async (): Promise<Client[]> => {
+    const { data } = await api.get<Client[]>('/clients');
     return data;
 };
 
-export const createClient = async (clientData: any) => {
-    const { data } = await api.post('/clients', clientData);
+export const createClient = async (clientData: ClientCreateInput): Promise<Client> => {
+    const { data } = await api.post<Client>('/clients', clientData);
     return data;
 };
 
-export const updateClient = async (id: string, clientData: any) => {
-    const { data } = await api.put(`/clients/${id}`, clientData);
+export const updateClient = async (id: string, clientData: ClientUpdateInput): Promise<Client> => {
+    const { data } = await api.put<Client>(`/clients/${id}`, clientData);
     return data;
 };
 
-export const deleteClient = async (id: string) => {
-    const { data } = await api.delete(`/clients/${id}`);
-    return data;
+export const deleteClient = async (id: string): Promise<void> => {
+    await api.delete(`/clients/${id}`);
 };
 
 // Event trigger
@@ -36,45 +36,41 @@ const triggerNotificationUpdate = () => {
 };
 
 // Notifications
-export const getNotifications = async (filters?: { type?: string; read?: string }) => {
+export const getNotifications = async (filters?: NotificationFilters): Promise<Notification[]> => {
     const params = new URLSearchParams();
     if (filters?.type) params.set('type', filters.type);
-    if (filters?.read !== undefined) params.set('read', filters.read);
-    const { data } = await api.get(`/notifications?${params.toString()}`);
+    if (filters?.read) params.set('read', filters.read);
+    const { data } = await api.get<Notification[]>(`/notifications?${params.toString()}`);
     return data;
 };
 
-export const getUnreadCount = async () => {
-    const { data } = await api.get('/notifications/unread-count');
-    return data.count as number;
+export const getUnreadCount = async (): Promise<number> => {
+    const { data } = await api.get<{ count: number }>('/notifications/unread-count');
+    return data.count;
 };
 
-export const markNotificationAsRead = async (id: string) => {
-    const { data } = await api.put(`/notifications/${id}/read`);
+export const markNotificationAsRead = async (id: string): Promise<void> => {
+    await api.put(`/notifications/${id}/read`);
     triggerNotificationUpdate();
-    return data;
 };
 
-export const markNotificationAsUnread = async (id: string) => {
-    const { data } = await api.put(`/notifications/${id}/unread`);
+export const markNotificationAsUnread = async (id: string): Promise<void> => {
+    await api.put(`/notifications/${id}/unread`);
     triggerNotificationUpdate();
-    return data;
 };
 
-export const markAllNotificationsAsRead = async () => {
-    const { data } = await api.put('/notifications/read-all');
+export const markAllNotificationsAsRead = async (): Promise<void> => {
+    await api.put('/notifications/read-all');
     triggerNotificationUpdate();
-    return data;
 };
 
-export const deleteNotification = async (id: string) => {
-    const { data } = await api.delete(`/notifications/${id}`);
+export const deleteNotification = async (id: string): Promise<void> => {
+    await api.delete(`/notifications/${id}`);
     triggerNotificationUpdate();
-    return data;
 };
 
-export const generateNotifications = async () => {
-    const { data } = await api.post('/notifications/generate');
+export const generateNotifications = async (): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>('/notifications/generate');
     triggerNotificationUpdate();
     return data;
 };

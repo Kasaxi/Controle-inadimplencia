@@ -12,7 +12,7 @@ export async function GET() {
 
         if (error) throw error;
         return NextResponse.json({ count: count ?? 0 });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to get count' }, { status: 500 });
     }
 }

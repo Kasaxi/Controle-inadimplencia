@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2 } from 'lucide-react';
 import { updateClient } from '@/services/api';
 import { toast } from 'sonner';
+import type { Client } from '@/types';
 
 function displayCPF(val: string): string {
     const d = val?.replace(/\D/g, '') || '';
@@ -20,19 +21,6 @@ function displayPhone(val: string): string {
     if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
     if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
     return val;
-}
-
-interface Client {
-    id: string;
-    name: string;
-    cpf: string;
-    contactNumber: string | null;
-    overdueInstallments: number;
-    address: string | null;
-    responsible: string | null;
-    observation: string | null;
-    fileUrl: string | null;
-    consultationDate: string | null;
 }
 
 interface ClientTableProps {
@@ -100,7 +88,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         if (newVal === oldValComp) return;
 
         try {
-            let saveVal: any = newVal;
+            let saveVal: string | number | null = newVal;
             if (key === 'cpf' || key === 'contactNumber') {
                  saveVal = newVal.replace(/\D/g, '');
             }
@@ -108,7 +96,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                  saveVal = null;
             }
 
-            await updateClient(String(client.id), { [key]: saveVal });
+            await updateClient(String(client.id), { [key]: saveVal } as never);
             toast.success("Atualizado com sucesso!");
             onRefresh?.(true);
         } catch {

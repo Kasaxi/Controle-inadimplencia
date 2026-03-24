@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import type { ClientUpdateInput, Client } from '@/types';
 
-export async function PUT(request: Request, context: any) {
+interface RouteParams {
+    params: Promise<{ id: string }>;
+}
+
+export async function PUT(request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
-        const updateData = await request.json();
+        const updateData = await request.json() as ClientUpdateInput;
 
         if (updateData.overdueInstallments !== undefined) {
             updateData.overdueInstallments = Number(updateData.overdueInstallments);
@@ -14,16 +19,15 @@ export async function PUT(request: Request, context: any) {
             updateData.consultationDate = new Date(updateData.consultationDate).toISOString();
         }
 
-        // Map the payload to strictly quoted keys for Prisma-created SQL column compatibility
-        const mappedUpdate: any = {
+        const mappedUpdate: Record<string, unknown> = {
             "updatedAt": new Date().toISOString()
         };
         
-        const validKeys = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus'];
+        const validKeys: (keyof ClientUpdateInput)[] = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus'];
         
         validKeys.forEach(key => {
             if (updateData[key] !== undefined) {
-                mappedUpdate[String(key)] = updateData[key];
+                mappedUpdate[key] = updateData[key];
             }
         });
 
@@ -35,15 +39,15 @@ export async function PUT(request: Request, context: any) {
             .single();
 
         if (error) throw error;
-        return NextResponse.json(data);
-    } catch (error: any) {
-        console.error('--- ERROR UPDATING CLIENT ---');
-        console.dir(error, { depth: null });
-        return NextResponse.json({ error: 'Failed to update client', details: error }, { status: 500 });
+        return NextResponse.json(data as Client);
+    } catch (error) {
+        const err = error as Error;
+        console.error('Error updating client:', err.message);
+        return NextResponse.json({ error: err.message || 'Failed to update client' }, { status: 500 });
     }
 }
 
-export async function DELETE(request: Request, context: any) {
+export async function DELETE(_request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
         const { error } = await supabase

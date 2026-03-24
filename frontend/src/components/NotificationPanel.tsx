@@ -4,9 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { Bell, AlertTriangle, AlertCircle, Info, X } from "lucide-react";
 import Link from "next/link";
 import { markNotificationAsRead, markAllNotificationsAsRead } from "@/services/api";
+import type { Notification } from "@/types";
 
 interface NotificationPanelProps {
-    notifications: any[];
+    notifications: Notification[];
 }
 
 export function NotificationPanel({ notifications }: NotificationPanelProps) {
@@ -43,7 +44,7 @@ export function NotificationPanel({ notifications }: NotificationPanelProps) {
         }
     };
 
-    const typeConfig: Record<string, any> = {
+    const typeConfig: Record<string, { icon: typeof AlertCircle; bg: string; border: string; iconColor: string; dot: string; titleColor: string }> = {
         critical: {
             icon: AlertCircle,
             bg: "bg-red-50",

@@ -10,7 +10,7 @@ export async function PUT() {
 
         if (error) throw error;
         return NextResponse.json({ message: 'All notifications marked as read' });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Failed to mark all as read' }, { status: 500 });
     }
 }

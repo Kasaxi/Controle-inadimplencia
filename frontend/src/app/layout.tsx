@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { ClientProviders } from '@/components/ClientProviders';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -13,8 +15,6 @@ export const metadata: Metadata = {
   description: 'Gestão de parcelas e contratos dos clientes da Caixa.',
 };
 
-import { AppLayout } from '@/components/layout/AppLayout';
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={`${jakarta.variable} font-sans antialiased`}>
-        <AppLayout>{children}</AppLayout>
+        <ClientProviders>
+          <AppLayout>{children}</AppLayout>
+        </ClientProviders>
       </body>
     </html>
   );

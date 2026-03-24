@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
-import { NextRequest } from 'next/server';
+import type { Notification } from '@/types';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
     try {
-        const searchParams = request.nextUrl.searchParams;
+        const searchParams = new URL(request.url).searchParams;
         const type = searchParams.get('type');
         const read = searchParams.get('read');
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await query;
 
         if (error) throw error;
-        return NextResponse.json(data);
+        return NextResponse.json(data as Notification[]);
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });

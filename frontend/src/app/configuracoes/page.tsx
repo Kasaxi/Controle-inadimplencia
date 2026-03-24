@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Bell, Gauge, Save, RotateCcw, Info, Mail, MessageSquare, Clock } from "lucide-react";
+import { Bell, Gauge, Save, RotateCcw, Info, Mail, MessageSquare, Clock } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { AppSettings, DEFAULT_SETTINGS, loadSettings, saveSettings } from "@/lib/settings";
 
-export default function ConfiguracoesPage() {
-    const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-    const [hasChanges, setHasChanges] = useState(false);
+function getInitialSettings(): AppSettings {
+    if (typeof window === 'undefined') return DEFAULT_SETTINGS;
+    return loadSettings();
+}
 
-    useEffect(() => {
-        setSettings(loadSettings());
-    }, []);
+export default function ConfiguracoesPage() {
+    const [settings, setSettings] = useState<AppSettings>(getInitialSettings);
+    const [hasChanges, setHasChanges] = useState(false);
 
     const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
         setSettings(prev => ({ ...prev, [key]: value }));
@@ -244,7 +245,7 @@ export default function ConfiguracoesPage() {
                                 <p className="text-sm text-slate-500 mt-1">
                                     As configurações são salvas localmente no seu navegador. O recurso de notificações por e-mail e WhatsApp
                                     será ativado em uma atualização futura com integração ao servidor. Por enquanto, os limiares configurados
-                                    aqui definem como os indicadores de cores e os filtros de "Casos Críticos" funcionam na tela de acompanhamento.
+                                    aqui definem como os indicadores de cores e os filtros de &quot;Casos Críticos&quot; funcionam na tela de acompanhamento.
                                 </p>
                             </div>
                         </div>

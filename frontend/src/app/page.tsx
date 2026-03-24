@@ -9,20 +9,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
+import type { Client } from '@/types';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
 
+interface WaContact {
+  id: string;
+  name: string;
+  number: string;
+}
+
 export default function HomePage() {
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [currentClient, setCurrentClient] = useState<any>(null);
+  const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [clientToDelete, setClientToDelete] = useState<any>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
   
-  const [waContacts, setWaContacts] = useState<Array<{id: string, name: string, number: string}>>(() => {
+  const [waContacts, setWaContacts] = useState<WaContact[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem('contr-inad-wa-contacts');
@@ -100,9 +107,13 @@ export default function HomePage() {
     critical: clients.filter(c => c.overdueInstallments > criticalThreshold).length,
   }), [clients, criticalThreshold]);
 
-  const handleOpenForm = (client?: any) => {
-    setCurrentClient(client || null);
+  const handleOpenForm = (client: Client | undefined) => {
+    setCurrentClient(client ?? null);
     setIsFormOpen(true);
+  };
+
+  const handleDeleteClick = (client: Client) => {
+    setClientToDelete(client);
   };
 
   const handleCloseForm = () => {
@@ -124,15 +135,12 @@ export default function HomePage() {
       toast.success(`Cliente ${clientToDelete.name} excluído com sucesso!`);
       setClientToDelete(null);
       fetchClients();
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       console.error('Error deleting client:', error);
-      toast.error(`Erro ao excluir: ${error?.response?.data?.error || error.message || 'Desconhecido'}`);
+      toast.error(`Erro ao excluir: ${err.message || 'Desconhecido'}`);
       setLoading(false);
     }
-  };
-
-  const handleDeleteClick = (client: any) => {
-      setClientToDelete(client);
   };
 
   const handleViewContract = (url: string) => {
@@ -167,8 +175,6 @@ export default function HomePage() {
     }
 
     const filterName = tabs.find(t => t.key === activeFilter)?.label || 'Todos';
-    let text = `\\u{1F4CA} *Relatório Controle de Inadimplência*\\n`;
-    text = text.replace(/\\u\{([0-9A-Fa-f]+)\}/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
     
     // Instead of raw emojis which cause encoding issues, we use String.fromCodePoint directly.
     const eChart = String.fromCodePoint(0x1F4CA);
@@ -286,7 +292,7 @@ export default function HomePage() {
             <MessageSquare className="h-4 w-4" />
             Relatório
           </Button>
-          <Button onClick={() => handleOpenForm()} className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20 transition-all text-white border-0 rounded-xl px-5">
+          <Button onClick={() => handleOpenForm(undefined)} className="gap-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 shadow-lg shadow-blue-500/20 transition-all text-white border-0 rounded-xl px-5">
             <PlusCircle className="h-4 w-4" />
             Novo Cliente
           </Button>
@@ -394,7 +400,7 @@ export default function HomePage() {
             <DialogTitle>{currentClient ? 'Editar Acompanhamento' : 'Novo Registro de Atraso'}</DialogTitle>
           </DialogHeader>
           <ClientForm
-            initialData={currentClient}
+            initialData={currentClient ?? undefined}
             onSuccess={handleFormSuccess}
             onCancel={handleCloseForm}
           />
