@@ -1,12 +1,11 @@
 "use client";
 
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState } from "react";
 import { LayoutDashboard, FileText, Settings, LogOut, PanelLeftClose, PanelLeft, Bell } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationPanel } from "@/components/NotificationPanel";
-import { getUnreadCount, getNotifications } from "@/services/api";
-import type { Notification } from "@/types";
+import { useNotifications, useUnreadCount } from "@/hooks/useApi";
 
 interface AppLayoutProps {
     children: ReactNode;
@@ -27,38 +26,15 @@ function getInitialCollapsed(): boolean {
 export function AppLayout({ children }: AppLayoutProps) {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(getInitialCollapsed);
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    
+    const { data: notifications = [] } = useNotifications({ read: 'false' });
+    const { data: unreadCount = 0 } = useUnreadCount();
 
     const navItems = [
-        { name: "Acompanhamento", href: "/", icon: LayoutDashboard },
+        { name: "Acompanhamento", href: "/", icon: LayoutDashboard, badge: undefined },
         { name: "Notificações", href: "/notificacoes", icon: Bell, badge: unreadCount },
-        { name: "Configurações", href: "/configuracoes", icon: Settings },
+        { name: "Configurações", href: "/configuracoes", icon: Settings, badge: undefined },
     ];
-
-    useEffect(() => {
-        async function loadNotifications() {
-            try {
-                const notifs = await getNotifications({ read: 'false' });
-                setNotifications(notifs);
-                const count = await getUnreadCount();
-                setUnreadCount(count);
-            } catch (error) {
-                console.error("Failed to load notifications:", error);
-            }
-        }
-
-        loadNotifications();
-        const interval = setInterval(loadNotifications, 5 * 60 * 1000);
-
-        const handleUpdate = () => loadNotifications();
-        window.addEventListener('contr-inad-notifications-updated', handleUpdate);
-
-        return () => {
-            clearInterval(interval);
-            window.removeEventListener('contr-inad-notifications-updated', handleUpdate);
-        };
-    }, []);
 
     const pageTitles: Record<string, string> = {
         '/': 'Visão Geral',
@@ -69,16 +45,13 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     return (
         <div className="flex h-screen bg-slate-50">
-            {/* ─── Dark Sidebar ─── */}
             <aside
                 className={`flex-col hidden md:flex transition-all duration-300 ease-in-out relative overflow-hidden ${collapsed ? 'w-[72px]' : 'w-[260px]'}`}
                 style={{ background: 'linear-gradient(180deg, #0F172A 0%, #1E293B 100%)' }}
             >
-                {/* Decorative glow */}
                 <div className="absolute -top-20 -left-20 w-60 h-60 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="absolute bottom-0 right-0 w-40 h-40 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none" />
 
-                {/* Logo area */}
                 <div className={`relative z-10 p-5 ${collapsed ? 'px-4' : ''}`}>
                     <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'}`}>
                         <div className="flex items-center gap-3">
@@ -114,7 +87,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </div>
                 </div>
 
-                {/* Navigation */}
                 <nav className={`relative z-10 flex-1 mt-4 space-y-1 ${collapsed ? 'px-3' : 'px-4'}`}>
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
@@ -143,7 +115,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                     })}
                 </nav>
 
-                {/* Logout */}
                 <div className={`relative z-10 border-t border-white/10 ${collapsed ? 'p-3' : 'p-4'}`}>
                     <button className={`flex items-center gap-3 px-3 py-2.5 w-full text-slate-500 hover:text-red-400 hover:bg-white/5 rounded-xl text-sm font-medium transition-all ${collapsed ? 'justify-center' : ''}`} title="Sair">
                         <LogOut className="w-[18px] h-[18px] shrink-0" />
@@ -152,9 +123,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </div>
             </aside>
 
-            {/* ─── Main Content ─── */}
             <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header */}
                 <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-8 z-50 relative">
                     <div>
                         <h2 className="text-base font-semibold text-slate-800">{pageTitle}</h2>
@@ -173,7 +142,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </div>
                 </header>
 
-                {/* Page Content */}
                 <main className="flex-1 overflow-y-auto p-6 relative bg-slate-50">
                     <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-slate-100/80 to-transparent pointer-events-none" />
                     <div className="relative z-10">

@@ -1,25 +1,15 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getNotifications, markNotificationAsRead, markNotificationAsUnread, markAllNotificationsAsRead, deleteNotification, generateNotifications as apiGenerateNotifications } from '@/services/api';
+import { useNotifications, useMarkNotificationAsRead, useMarkNotificationAsUnread, useMarkAllNotificationsAsRead, useDeleteNotification, useGenerateNotifications } from '@/hooks/useApi';
 import { Bell, AlertTriangle, AlertCircle, Info, CheckCheck, Trash2, RefreshCw, ExternalLink, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast, Toaster } from 'sonner';
+import type { Notification } from '@/types';
 
 type NotificationType = 'all' | 'critical' | 'warning' | 'info';
 type ReadFilter = 'all' | 'unread' | 'read';
-
-interface Notification {
-    id: string;
-    type: 'critical' | 'warning' | 'info';
-    title: string;
-    message: string;
-    read: boolean;
-    clientId: string | null;
-    client: { id: string; name: string; cpf: string } | null;
-    createdAt: string;
-}
 
 const typeConfig = {
     critical: {
@@ -56,28 +46,15 @@ const typeConfig = {
 
 export default function NotificacoesPage() {
     const router = useRouter();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [generating, setGenerating] = useState(false);
+    const { data: notifications = [], isLoading } = useNotifications();
+    const markAsReadMutation = useMarkNotificationAsRead();
+    const markAsUnreadMutation = useMarkNotificationAsUnread();
+    const markAllReadMutation = useMarkAllNotificationsAsRead();
+    const deleteMutation = useDeleteNotification();
+    const generateMutation = useGenerateNotifications();
+    
     const [typeFilter, setTypeFilter] = useState<NotificationType>('all');
     const [readFilter, setReadFilter] = useState<ReadFilter>('all');
-
-    const fetchNotifications = async () => {
-        try {
-            setLoading(true);
-            const data = await getNotifications();
-            setNotifications(data);
-        } catch (error) {
-            console.error(error);
-            toast.error('Erro ao carregar notificações');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
 
     const filtered = useMemo(() => {
         let result = notifications;
@@ -97,42 +74,35 @@ export default function NotificacoesPage() {
 
     const handleMarkRead = async (id: string) => {
         try {
-            await markNotificationAsRead(id);
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+            await markAsReadMutation.mutateAsync(id);
         } catch { toast.error('Erro ao marcar como lida'); }
     };
 
     const handleMarkUnread = async (id: string) => {
         try {
-            await markNotificationAsUnread(id);
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: false } : n));
+            await markAsUnreadMutation.mutateAsync(id);
         } catch { toast.error('Erro ao marcar como não lida'); }
     };
 
     const handleMarkAllRead = async () => {
         try {
-            await markAllNotificationsAsRead();
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            await markAllReadMutation.mutateAsync();
             toast.success('Todas marcadas como lidas');
         } catch { toast.error('Erro ao marcar todas'); }
     };
 
     const handleDelete = async (id: string) => {
         try {
-            await deleteNotification(id);
-            setNotifications(prev => prev.filter(n => n.id !== id));
+            await deleteMutation.mutateAsync(id);
             toast.success('Notificação removida');
         } catch { toast.error('Erro ao remover'); }
     };
 
     const handleGenerate = async () => {
         try {
-            setGenerating(true);
-            const result = await apiGenerateNotifications();
+            const result = await generateMutation.mutateAsync();
             toast.success(result.message);
-            await fetchNotifications();
         } catch { toast.error('Erro ao gerar notificações'); }
-        finally { setGenerating(false); }
     };
 
     const handleNavigateToClient = (notification: Notification) => {
@@ -168,7 +138,6 @@ export default function NotificacoesPage() {
         <div className="space-y-6">
             <Toaster position="top-right" richColors />
 
-            {/* Header */}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-slate-900">Central de Notificações</h1>
@@ -177,11 +146,11 @@ export default function NotificacoesPage() {
                 <div className="flex gap-2">
                     <Button
                         onClick={handleGenerate}
-                        disabled={generating}
+                        disabled={generateMutation.isPending}
                         variant="outline"
                         className="gap-2 rounded-xl border-slate-200"
                     >
-                        <RefreshCw className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`h-4 w-4 ${generateMutation.isPending ? 'animate-spin' : ''}`} />
                         Verificar Novos
                     </Button>
                     {counts.unread > 0 && (
@@ -196,7 +165,6 @@ export default function NotificacoesPage() {
                 </div>
             </div>
 
-            {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-4">
                 {[
                     { label: 'Total', value: counts.all, gradient: 'from-slate-600 to-slate-800', shadow: 'shadow-slate-500/15' },
@@ -212,9 +180,7 @@ export default function NotificacoesPage() {
                 ))}
             </div>
 
-            {/* Filters + List */}
             <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-                {/* Filter Bar */}
                 <div className="p-4 border-b border-slate-200/60 bg-slate-50/30">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                         <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl">
@@ -259,9 +225,8 @@ export default function NotificacoesPage() {
                     </div>
                 </div>
 
-                {/* Notification List */}
                 <div className="divide-y divide-slate-100">
-                    {loading ? (
+                    {isLoading ? (
                         <div className="p-6 space-y-3">
                             {[1, 2, 3, 4].map(i => (
                                 <div key={i} className="flex gap-4 animate-pulse">
@@ -291,12 +256,10 @@ export default function NotificacoesPage() {
                                         : 'bg-white border-transparent opacity-75 hover:opacity-100'
                                         }`}
                                 >
-                                    {/* Type Icon */}
                                     <div className={`w-10 h-10 rounded-xl ${config.bg} ${config.border} border flex items-center justify-center shrink-0`}>
                                         <Icon className={`w-5 h-5 ${config.text}`} />
                                     </div>
 
-                                    {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             {!notification.read && (
@@ -328,7 +291,6 @@ export default function NotificacoesPage() {
                                         )}
                                     </div>
 
-                                    {/* Actions */}
                                     <div className="flex items-center gap-1 shrink-0">
                                         {!notification.read && (
                                             <button

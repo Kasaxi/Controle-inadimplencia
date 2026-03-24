@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
-import { getClients, deleteClient } from '@/services/api';
+import { useState, useMemo } from 'react';
 import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
+import { useClients, useDeleteClient } from '@/hooks/useApi';
 import type { Client } from '@/types';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
@@ -20,8 +20,9 @@ interface WaContact {
 }
 
 export default function HomePage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: clients = [], isLoading, refetch, isFetching } = useClients();
+  const deleteClientMutation = useDeleteClient();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentClient, setCurrentClient] = useState<Client | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -45,31 +46,6 @@ export default function HomePage() {
 
   const criticalThreshold = loadSettings().criticalThreshold;
 
-  const fetchClients = async (silent = false) => {
-    try {
-      if (!silent) setLoading(true);
-      const data = await getClients();
-      setClients(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchClients();
-
-    // Check for search query in URL
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const search = params.get('search');
-      if (search) {
-        setSearchQuery(search);
-      }
-    }
-  }, []);
-  // KPI Calculations
   const totalClients = clients.length;
   const totalOverdue = clients.filter((c) => c.overdueInstallments > 0).length;
   const totalInstallments = clients.reduce((acc, client) => acc + client.overdueInstallments, 0);
@@ -123,23 +99,19 @@ export default function HomePage() {
 
   const handleFormSuccess = () => {
     handleCloseForm();
-    fetchClients();
   };
 
   const confirmDelete = async () => {
     if (!clientToDelete) return;
 
     try {
-      setLoading(true);
-      await deleteClient(clientToDelete.id);
+      await deleteClientMutation.mutateAsync(clientToDelete.id);
       toast.success(`Cliente ${clientToDelete.name} excluído com sucesso!`);
       setClientToDelete(null);
-      fetchClients();
     } catch (error) {
       const err = error as Error;
       console.error('Error deleting client:', error);
       toast.error(`Erro ao excluir: ${err.message || 'Desconhecido'}`);
-      setLoading(false);
     }
   };
 
@@ -176,7 +148,6 @@ export default function HomePage() {
 
     const filterName = tabs.find(t => t.key === activeFilter)?.label || 'Todos';
     
-    // Instead of raw emojis which cause encoding issues, we use String.fromCodePoint directly.
     const eChart = String.fromCodePoint(0x1F4CA);
     const eUser = String.fromCodePoint(0x1F464);
     const ePhone = String.fromCodePoint(0x1F4DE);
@@ -271,7 +242,6 @@ export default function HomePage() {
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
 
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Acompanhamento</h1>
@@ -281,12 +251,12 @@ export default function HomePage() {
           <Button 
             variant="outline"
             size="icon"
-            onClick={() => fetchClients()}
-            disabled={loading}
+            onClick={() => refetch()}
+            disabled={isFetching}
             className="w-10 h-10 rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all group"
             title="Atualizar dados"
           >
-            <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
           <Button onClick={() => setIsWhatsappModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
             <MessageSquare className="h-4 w-4" />
@@ -299,7 +269,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((kpi) => (
           <button
@@ -309,7 +278,6 @@ export default function HomePage() {
             title={`Filtrar por ${kpi.title}`}
           >
             <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.gradient} p-5 shadow-lg ${kpi.shadowColor} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:brightness-105 active:scale-95 ${activeFilter === kpi.filter ? 'ring-2 ring-white/50 ring-offset-2 ring-offset-slate-50 scale-[1.02] shadow-xl' : ''}`}>
-              {/* Decorative circles */}
               <div className="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full" />
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/5 rounded-full" />
 
@@ -328,9 +296,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* Client Table */}
       <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
-        {/* Filter Tabs + Search */}
         <div className="p-4 border-b border-slate-200/60 bg-slate-50/30">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
             <div className="flex gap-1 bg-slate-100/80 p-1 rounded-xl">
@@ -369,7 +335,7 @@ export default function HomePage() {
         </div>
 
         <div className="p-0">
-          {loading ? (
+          {isLoading ? (
             <div className="p-6 space-y-3">
               {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="flex gap-4 animate-pulse">
@@ -387,13 +353,12 @@ export default function HomePage() {
               onEdit={handleOpenForm}
               onDelete={handleDeleteClick}
               onViewContract={handleViewContract}
-              onRefresh={fetchClients}
+              onRefresh={() => refetch()}
             />
           )}
         </div>
       </div>
 
-      {/* Form Modal */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -407,7 +372,6 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Modal */}
       <Dialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -427,7 +391,7 @@ export default function HomePage() {
             <Button 
               variant="outline" 
               onClick={() => setClientToDelete(null)} 
-              disabled={loading}
+              disabled={deleteClientMutation.isPending}
               className="rounded-xl px-4"
             >
               Cancelar
@@ -435,16 +399,15 @@ export default function HomePage() {
             <Button 
               variant="destructive" 
               onClick={confirmDelete}
-              disabled={loading}
+              disabled={deleteClientMutation.isPending}
               className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 rounded-xl px-4"
             >
-              {loading ? 'Excluindo...' : 'Excluir Cliente'}
+              {deleteClientMutation.isPending ? 'Excluindo...' : 'Excluir Cliente'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* WhatsApp Report Modal */}
       <Dialog open={isWhatsappModalOpen} onOpenChange={setIsWhatsappModalOpen}>
         <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
           <div className="p-6 pb-4 bg-slate-50/50 border-b border-slate-100">
