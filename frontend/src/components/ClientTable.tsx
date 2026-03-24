@@ -39,7 +39,7 @@ interface ClientTableProps {
     clients: Client[];
     onEdit: (client: Client) => void;
     onViewContract: (url: string) => void;
-    onRefresh?: () => void;
+    onRefresh?: (silent?: boolean) => void;
     onDelete?: (client: Client) => void;
 }
 
@@ -110,7 +110,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
 
             await updateClient(String(client.id), { [key]: saveVal });
             toast.success("Atualizado com sucesso!");
-            onRefresh?.();
+            onRefresh?.(true);
         } catch {
             toast.error("Erro ao atualizar campo.");
         }
@@ -233,7 +233,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         try {
             await updateClient(String(client.id), { overdueInstallments: newVal });
             toast.success(`Parcelas de ${client.name} atualizadas para ${newVal}`);
-            onRefresh?.();
+            onRefresh?.(true);
         } catch {
             toast.error("Erro ao atualizar parcelas.");
         }

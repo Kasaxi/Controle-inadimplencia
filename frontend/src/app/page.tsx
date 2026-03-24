@@ -38,15 +38,15 @@ export default function HomePage() {
 
   const criticalThreshold = loadSettings().criticalThreshold;
 
-  const fetchClients = async () => {
+  const fetchClients = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await getClients();
       setClients(data);
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
