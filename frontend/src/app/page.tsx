@@ -541,19 +541,28 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Contract Viewer - Fullscreen Overlay */}
-      {isPreviewOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-[#1a1a2e]">
-          <div className="flex justify-between items-center px-6 py-3 bg-[#111827] text-white shrink-0 shadow-lg">
-            <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-200">Visualizador de Documento</h2>
-            <button
+      {/* Contract Viewer - Usando Dialog para garantir o contexto de empilhamento correto */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent 
+          className="max-w-none w-screen h-screen p-0 border-0 rounded-none bg-[#1a1a2e] flex flex-col overflow-hidden z-[100]" 
+          showCloseButton={false}
+        >
+          <DialogHeader className="sr-only">
+            <DialogTitle>Visualizador de Documento</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex justify-between items-center px-6 py-3 bg-[#111827] text-white shrink-0 shadow-lg z-10">
+            <h2 className="text-sm font-semibold tracking-wide uppercase text-slate-200 font-bold">Visualizador de Documento</h2>
+            <Button
+              variant="ghost"
               onClick={() => setIsPreviewOpen(false)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-colors h-auto border-0"
             >
               ✕ Fechar
-            </button>
+            </Button>
           </div>
-          <div className="flex-1 w-full relative">
+          
+          <div className="flex-1 w-full relative bg-slate-100">
             {previewUrl && (
               <iframe
                 src={previewUrl}
@@ -563,8 +572,8 @@ export default function HomePage() {
               />
             )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
