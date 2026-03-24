@@ -541,10 +541,9 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Contract Viewer - Usando Dialog para garantir o contexto de empilhamento correto */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent 
-          className="max-w-none w-screen h-screen p-0 border-0 rounded-none bg-[#1a1a2e] flex flex-col overflow-hidden z-[100]" 
+          className="max-w-[95vw] w-[95vw] h-[95vh] p-0 border border-slate-700 rounded-xl bg-[#1a1a2e] flex flex-col overflow-hidden z-[100] shadow-2xl sm:max-w-[95vw]" 
           showCloseButton={false}
         >
           <DialogHeader className="sr-only">
