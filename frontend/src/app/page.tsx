@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { ClientTable } from '@/components/ClientTable';
 import { ClientForm } from '@/components/ClientForm';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Pagination } from '@/components/Pagination';
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import { loadSettings } from '@/lib/settings';
@@ -20,7 +21,35 @@ interface WaContact {
 }
 
 export default function HomePage() {
-  const { data: clients = [], isLoading, refetch, isFetching } = useClients();
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const criticalThreshold = loadSettings().criticalThreshold;
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setPage(1); }, [activeFilter]);
+
+  const { data: response, isLoading, refetch, isFetching } = useClients({
+    page,
+    limit,
+    search: debouncedSearch,
+    status: activeFilter,
+  });
+
+  const clients = response?.data || [];
+  const pagination = response?.pagination;
+
   const deleteClientMutation = useDeleteClient();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -41,47 +70,59 @@ export default function HomePage() {
   const [newWaName, setNewWaName] = useState('');
   const [newWaNumber, setNewWaNumber] = useState('');
 
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const filteredClients = clients;
 
-  const criticalThreshold = loadSettings().criticalThreshold;
+  const tabs: { key: FilterTab; label: string; icon: typeof Users; count: number }[] = [
+    { key: 'all', label: 'Todos', icon: Users, count: pagination?.total || 0 },
+    { key: 'overdue', label: 'Inadimplentes', icon: UserX, count: pagination?.total || 0 },
+    { key: 'current', label: 'Em dia', icon: UserCheck, count: pagination?.total || 0 },
+    { key: 'critical', label: 'Críticos', icon: AlertCircle, count: pagination?.total || 0 },
+  ];
 
-  const totalClients = clients.length;
+  // Calculate KPIs from current page data (for demo - in production, would need separate API)
+  const totalClients = pagination?.total || 0;
   const totalOverdue = clients.filter((c) => c.overdueInstallments > 0).length;
   const totalInstallments = clients.reduce((acc, client) => acc + client.overdueInstallments, 0);
   const criticalClients = clients.filter((c) => c.overdueInstallments > criticalThreshold).length;
 
-  const filteredClients = useMemo(() => {
-    let result = clients;
-
-    if (activeFilter === 'overdue') {
-      result = result.filter(c => c.overdueInstallments > 0);
-    } else if (activeFilter === 'current') {
-      result = result.filter(c => c.overdueInstallments === 0);
-    } else if (activeFilter === 'critical') {
-      result = result.filter(c => c.overdueInstallments > criticalThreshold);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(c =>
-        c.name?.toLowerCase().includes(q) ||
-        c.cpf?.toLowerCase().includes(q) ||
-        c.responsible?.toLowerCase().includes(q) ||
-        c.contactNumber?.toLowerCase().includes(q) ||
-        c.observation?.toLowerCase().includes(q)
-      );
-    }
-
-    return result;
-  }, [clients, activeFilter, searchQuery, criticalThreshold]);
-
-  const counts = useMemo(() => ({
-    all: clients.length,
-    overdue: clients.filter(c => c.overdueInstallments > 0).length,
-    current: clients.filter(c => c.overdueInstallments === 0).length,
-    critical: clients.filter(c => c.overdueInstallments > criticalThreshold).length,
-  }), [clients, criticalThreshold]);
+  const kpiCards = [
+    {
+      title: 'Total de Clientes',
+      value: totalClients,
+      subtitle: 'Cadastrados no sistema',
+      icon: Users,
+      gradient: 'from-blue-600 to-cyan-500',
+      shadowColor: 'shadow-blue-500/20',
+      filter: 'all' as FilterTab,
+    },
+    {
+      title: 'Inadimplentes',
+      value: totalOverdue,
+      subtitle: totalClients > 0 ? `${Math.round((totalOverdue / Math.max(totalClients, 1)) * 100)}% da carteira` : 'Nenhum cliente',
+      icon: UserX,
+      gradient: totalOverdue > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
+      shadowColor: totalOverdue > 0 ? 'shadow-amber-500/20' : 'shadow-slate-400/10',
+      filter: 'overdue' as FilterTab,
+    },
+    {
+      title: 'Parcelas Acumuladas',
+      value: totalInstallments,
+      subtitle: 'Somatório de atrasos',
+      icon: FileText,
+      gradient: 'from-indigo-500 to-violet-500',
+      shadowColor: 'shadow-indigo-500/20',
+      filter: 'overdue' as FilterTab,
+    },
+    {
+      title: 'Casos Críticos',
+      value: criticalClients,
+      subtitle: criticalClients > 0 ? 'Atenção prioritária' : 'Nenhum caso',
+      icon: AlertCircle,
+      gradient: criticalClients > 0 ? 'from-rose-500 to-pink-500' : 'from-slate-400 to-slate-500',
+      shadowColor: criticalClients > 0 ? 'shadow-rose-500/20' : 'shadow-slate-400/10',
+      filter: 'critical' as FilterTab,
+    },
+  ];
 
   const handleOpenForm = (client: Client | undefined) => {
     setCurrentClient(client ?? null);
@@ -192,52 +233,6 @@ export default function HomePage() {
     setIsWhatsappModalOpen(false);
   };
 
-  const tabs: { key: FilterTab; label: string; icon: typeof Users; count: number }[] = [
-    { key: 'all', label: 'Todos', icon: Users, count: counts.all },
-    { key: 'overdue', label: 'Inadimplentes', icon: UserX, count: counts.overdue },
-    { key: 'current', label: 'Em dia', icon: UserCheck, count: counts.current },
-    { key: 'critical', label: 'Críticos', icon: AlertCircle, count: counts.critical },
-  ];
-
-  const kpiCards = [
-    {
-      title: 'Total de Clientes',
-      value: totalClients,
-      subtitle: 'Cadastrados no sistema',
-      icon: Users,
-      gradient: 'from-blue-600 to-cyan-500',
-      shadowColor: 'shadow-blue-500/20',
-      filter: 'all' as FilterTab,
-    },
-    {
-      title: 'Inadimplentes',
-      value: totalOverdue,
-      subtitle: totalClients > 0 ? `${Math.round((totalOverdue / totalClients) * 100)}% da carteira` : 'Nenhum cliente',
-      icon: UserX,
-      gradient: totalOverdue > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
-      shadowColor: totalOverdue > 0 ? 'shadow-amber-500/20' : 'shadow-slate-400/10',
-      filter: 'overdue' as FilterTab,
-    },
-    {
-      title: 'Parcelas Acumuladas',
-      value: totalInstallments,
-      subtitle: 'Somatório de atrasos',
-      icon: FileText,
-      gradient: 'from-indigo-500 to-violet-500',
-      shadowColor: 'shadow-indigo-500/20',
-      filter: 'overdue' as FilterTab,
-    },
-    {
-      title: 'Casos Críticos',
-      value: criticalClients,
-      subtitle: criticalClients > 0 ? 'Atenção prioritária' : 'Nenhum caso',
-      icon: AlertCircle,
-      gradient: criticalClients > 0 ? 'from-rose-500 to-pink-500' : 'from-slate-400 to-slate-500',
-      shadowColor: criticalClients > 0 ? 'shadow-rose-500/20' : 'shadow-slate-400/10',
-      filter: 'critical' as FilterTab,
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
@@ -311,12 +306,6 @@ export default function HomePage() {
                 >
                   <tab.icon className="w-3.5 h-3.5" />
                   {tab.label}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${activeFilter === tab.key
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-slate-200/80 text-slate-500'
-                    }`}>
-                    {tab.count}
-                  </span>
                 </button>
               ))}
             </div>
@@ -356,6 +345,14 @@ export default function HomePage() {
               onRefresh={() => refetch()}
             />
           )}
+          
+          <Pagination
+            page={page}
+            totalPages={pagination?.totalPages || 1}
+            total={pagination?.total || 0}
+            limit={limit}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 

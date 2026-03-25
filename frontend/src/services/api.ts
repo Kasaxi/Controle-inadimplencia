@@ -8,9 +8,32 @@ const api = axios.create({
     },
 });
 
+export interface PaginationParams {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: 'all' | 'overdue' | 'current' | 'critical';
+}
+
+export interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+    };
+}
+
 // Clients
-export const getClients = async (): Promise<Client[]> => {
-    const { data } = await api.get<Client[]>('/clients');
+export const getClients = async (params?: PaginationParams): Promise<PaginatedResponse<Client>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.status) searchParams.set('status', params.status);
+    
+    const { data } = await api.get<PaginatedResponse<Client>>(`/clients?${searchParams.toString()}`);
     return data;
 };
 

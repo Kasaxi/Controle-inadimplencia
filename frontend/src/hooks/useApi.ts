@@ -11,19 +11,21 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
   generateNotifications,
+  type PaginationParams,
 } from "@/services/api";
 import type { ClientCreateInput, ClientUpdateInput, NotificationFilters } from "@/types";
 
 export const queryKeys = {
-  clients: ["clients"] as const,
+  clients: (params?: PaginationParams) => ["clients", params] as const,
+  clientsAll: ["clients"] as const,
   notifications: (filters?: NotificationFilters) => ["notifications", filters] as const,
   unreadCount: ["unreadCount"] as const,
 };
 
-export function useClients() {
+export function useClients(params?: PaginationParams) {
   return useQuery({
-    queryKey: queryKeys.clients,
-    queryFn: getClients,
+    queryKey: queryKeys.clients(params),
+    queryFn: () => getClients(params),
   });
 }
 
@@ -33,7 +35,7 @@ export function useCreateClient() {
   return useMutation({
     mutationFn: (data: ClientCreateInput) => createClient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
     },
   });
 }
@@ -45,7 +47,7 @@ export function useUpdateClient() {
     mutationFn: ({ id, data }: { id: string; data: ClientUpdateInput }) =>
       updateClient(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
     },
   });
 }
@@ -56,7 +58,7 @@ export function useDeleteClient() {
   return useMutation({
     mutationFn: (id: string) => deleteClient(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.clients });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
     },
   });
 }

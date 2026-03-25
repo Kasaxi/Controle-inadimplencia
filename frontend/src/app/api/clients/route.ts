@@ -2,15 +2,53 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import type { ClientCreateInput, Client } from '@/types';
 
-export async function GET() {
+const DEFAULT_PAGE_SIZE = 20;
+
+export async function GET(request: Request) {
     try {
-        const { data, error } = await supabase
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = Math.min(parseInt(searchParams.get('limit') || String(DEFAULT_PAGE_SIZE)), 100);
+        const search = searchParams.get('search') || '';
+        const status = searchParams.get('status'); // 'all', 'overdue', 'current', 'critical'
+        
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabase
             .from('Client')
-            .select('*')
-            .order('createdAt', { ascending: false });
+            .select('*', { count: 'exact' });
+
+        // Apply search filter
+        if (search) {
+            const searchLower = search.toLowerCase();
+            query = query.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
+        }
+
+        // Apply status filter
+        if (status === 'overdue') {
+            query = query.gt('overdueInstallments', 0);
+        } else if (status === 'current') {
+            query = query.eq('overdueInstallments', 0);
+        } else if (status === 'critical') {
+            query = query.gte('overdueInstallments', 2);
+        }
+
+        const { data, error, count } = await query
+            .order('createdAt', { ascending: false })
+            .range(from, to);
 
         if (error) throw error;
-        return NextResponse.json(data as Client[]);
+
+        return NextResponse.json({
+            data: data as Client[],
+            pagination: {
+                page,
+                limit,
+                total: count || 0,
+                totalPages: Math.ceil((count || 0) / limit)
+            }
+        });
     } catch (error) {
         console.error('Error fetching clients:', error);
         return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
