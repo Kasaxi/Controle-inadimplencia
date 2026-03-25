@@ -8,19 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Pagination } from '@/components/Pagination';
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import '@/lib/settings';
-import { useClients, useDeleteClient, useClientStats } from '@/hooks/useApi';
+import { loadSettings } from '@/lib/settings';
+import { useClients, useDeleteClient, useClientStats, useWhatsAppContacts, useCreateWhatsAppContact, useDeleteWhatsAppContact } from '@/hooks/useApi';
 import type { Client } from '@/types';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
 type SortKey = 'name' | 'cpf' | 'contactNumber' | 'overdueInstallments' | 'responsible' | 'createdAt';
 type SortDir = 'asc' | 'desc';
-
-interface WaContact {
-  id: string;
-  name: string;
-  number: string;
-}
 
 export default function HomePage() {
   const [page, setPage] = useState(1);
@@ -43,7 +37,8 @@ export default function HomePage() {
   useEffect(() => { setPage(1); }, [activeFilter, debouncedSearch]);
 
   // Fetch stats (always for total, regardless of filters)
-  const { data: stats } = useClientStats(debouncedSearch);
+  const settings = loadSettings();
+  const { data: stats } = useClientStats(debouncedSearch, settings.criticalThreshold);
 
   const { data: response, isLoading, refetch, isFetching } = useClients({
     page,
@@ -66,14 +61,11 @@ export default function HomePage() {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
   
-  const [waContacts, setWaContacts] = useState<WaContact[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = localStorage.getItem('contr-inad-wa-contacts');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [];
-  });
+  // WhatsApp contacts from API (synced across browsers)
+  const { data: waContacts = [] } = useWhatsAppContacts();
+  const createContactMutation = useCreateWhatsAppContact();
+  const deleteContactMutation = useDeleteWhatsAppContact();
+  
   const [newWaName, setNewWaName] = useState('');
   const [newWaNumber, setNewWaNumber] = useState('');
 
@@ -96,6 +88,7 @@ export default function HomePage() {
 
   // KPIs from stats (global, not filtered by page)
   const totalClients = stats?.total || 0;
+  const totalCurrent = stats?.totalCurrent || 0;
   const totalOverdue = stats?.totalOverdue || 0;
   const totalInstallments = stats?.totalInstallments || 0;
   const criticalClients = stats?.totalCritical || 0;
@@ -111,21 +104,21 @@ export default function HomePage() {
       filter: 'all' as FilterTab,
     },
     {
+      title: 'Clientes em Dia',
+      value: totalCurrent,
+      subtitle: totalClients > 0 ? `${Math.round((totalCurrent / Math.max(totalClients, 1)) * 100)}% da carteira` : 'Nenhum cliente',
+      icon: UserCheck,
+      gradient: totalCurrent > 0 ? 'from-emerald-500 to-teal-500' : 'from-slate-400 to-slate-500',
+      shadowColor: totalCurrent > 0 ? 'shadow-emerald-500/20' : 'shadow-slate-400/10',
+      filter: 'current' as FilterTab,
+    },
+    {
       title: 'Inadimplentes',
       value: totalOverdue,
       subtitle: totalClients > 0 ? `${Math.round((totalOverdue / Math.max(totalClients, 1)) * 100)}% da carteira` : 'Nenhum cliente',
       icon: UserX,
       gradient: totalOverdue > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
       shadowColor: totalOverdue > 0 ? 'shadow-amber-500/20' : 'shadow-slate-400/10',
-      filter: 'overdue' as FilterTab,
-    },
-    {
-      title: 'Parcelas Acumuladas',
-      value: totalInstallments,
-      subtitle: 'Somatório de atrasos',
-      icon: FileText,
-      gradient: 'from-indigo-500 to-violet-500',
-      shadowColor: 'shadow-indigo-500/20',
       filter: 'overdue' as FilterTab,
     },
     {
@@ -136,6 +129,15 @@ export default function HomePage() {
       gradient: criticalClients > 0 ? 'from-rose-500 to-pink-500' : 'from-slate-400 to-slate-500',
       shadowColor: criticalClients > 0 ? 'shadow-rose-500/20' : 'shadow-slate-400/10',
       filter: 'critical' as FilterTab,
+    },
+    {
+      title: 'Parcelas Acumuladas',
+      value: totalInstallments,
+      subtitle: 'Somatório de atrasos',
+      icon: FileText,
+      gradient: 'from-indigo-500 to-violet-500',
+      shadowColor: 'shadow-indigo-500/20',
+      filter: 'overdue' as FilterTab,
     },
   ];
 
@@ -176,24 +178,31 @@ export default function HomePage() {
     setIsPreviewOpen(true);
   };
 
-  const removeWaContact = (id: string) => {
-    const updated = waContacts.filter(c => c.id !== id);
-    setWaContacts(updated);
-    try { localStorage.setItem('contr-inad-wa-contacts', JSON.stringify(updated)); } catch {}
+  const removeWaContact = async (id: string) => {
+    try {
+      await deleteContactMutation.mutateAsync(id);
+      toast.success('Contato removido');
+    } catch {
+      toast.error('Erro ao remover contato');
+    }
   };
 
-  const saveWaContact = () => {
+  const saveWaContact = async () => {
     if (!newWaName.trim() || newWaNumber.replace(/\D/g, '').length < 10) {
       toast.error('Preencha um nome e um número de telefone válido com DDD.');
       return;
     }
-    const newContact = { id: crypto.randomUUID(), name: newWaName.trim(), number: newWaNumber.trim() };
-    const updated = [...waContacts, newContact];
-    setWaContacts(updated);
-    try { localStorage.setItem('contr-inad-wa-contacts', JSON.stringify(updated)); } catch {}
-    setNewWaName('');
-    setNewWaNumber('');
-    toast.success('Contato salvo!');
+    try {
+      await createContactMutation.mutateAsync({ 
+        name: newWaName.trim(), 
+        number: newWaNumber.trim() 
+      });
+      setNewWaName('');
+      setNewWaNumber('');
+      toast.success('Contato salvo!');
+    } catch {
+      toast.error('Erro ao salvar contato');
+    }
   };
 
   const generateWhatsAppReport = (targetNumber: string, isWeb: boolean = false) => {
@@ -279,7 +288,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         {kpiCards.map((kpi) => (
           <button
             key={kpi.title}

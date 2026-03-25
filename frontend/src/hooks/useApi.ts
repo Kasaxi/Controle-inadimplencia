@@ -12,6 +12,9 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
   generateNotifications,
+  getWhatsAppContacts,
+  createWhatsAppContact,
+  deleteWhatsAppContact,
   type PaginationParams,
 } from "@/services/api";
 import type { ClientCreateInput, ClientUpdateInput, NotificationFilters } from "@/types";
@@ -30,10 +33,10 @@ export function useClients(params?: PaginationParams) {
   });
 }
 
-export function useClientStats(search?: string) {
+export function useClientStats(search?: string, criticalThreshold?: number) {
   return useQuery({
-    queryKey: ['clientStats', search] as const,
-    queryFn: () => getClientStats(search),
+    queryKey: ['clientStats', search, criticalThreshold] as const,
+    queryFn: () => getClientStats(search, criticalThreshold),
   });
 }
 
@@ -138,10 +141,41 @@ export function useGenerateNotifications() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => generateNotifications(),
+    mutationFn: (settings?: { criticalThreshold?: number; alertThreshold?: number; reminderDays?: number }) => 
+      generateNotifications(settings),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: queryKeys.unreadCount });
+    },
+  });
+}
+
+export function useWhatsAppContacts() {
+  return useQuery({
+    queryKey: ['whatsAppContacts'],
+    queryFn: getWhatsAppContacts,
+  });
+}
+
+export function useCreateWhatsAppContact() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ name, number }: { name: string; number: string }) => 
+      createWhatsAppContact(name, number),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsAppContacts'] });
+    },
+  });
+}
+
+export function useDeleteWhatsAppContact() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => deleteWhatsAppContact(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsAppContacts'] });
     },
   });
 }

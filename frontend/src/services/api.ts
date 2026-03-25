@@ -49,9 +49,10 @@ export const getClients = async (params?: PaginationParams): Promise<PaginatedRe
     return data;
 };
 
-export const getClientStats = async (search?: string): Promise<ClientStats> => {
+export const getClientStats = async (search?: string, criticalThreshold?: number): Promise<ClientStats> => {
     const searchParams = new URLSearchParams();
     if (search) searchParams.set('search', search);
+    if (criticalThreshold !== undefined) searchParams.set('criticalThreshold', String(criticalThreshold));
     
     const { data } = await api.get<ClientStats>(`/clients/stats?${searchParams.toString()}`);
     return data;
@@ -112,10 +113,32 @@ export const deleteNotification = async (id: string): Promise<void> => {
     triggerNotificationUpdate();
 };
 
-export const generateNotifications = async (): Promise<{ message: string }> => {
-    const { data } = await api.post<{ message: string }>('/notifications/generate');
+export const generateNotifications = async (settings?: { criticalThreshold?: number; alertThreshold?: number; reminderDays?: number }): Promise<{ message: string }> => {
+    const { data } = await api.post<{ message: string }>('/notifications/generate', settings || {});
     triggerNotificationUpdate();
     return data;
+};
+
+export interface WhatsAppContact {
+    id: string;
+    name: string;
+    number: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const getWhatsAppContacts = async (): Promise<WhatsAppContact[]> => {
+    const { data } = await api.get<WhatsAppContact[]>('/whatsapp-contacts');
+    return data;
+};
+
+export const createWhatsAppContact = async (name: string, number: string): Promise<WhatsAppContact> => {
+    const { data } = await api.post<WhatsAppContact>('/whatsapp-contacts', { name, number });
+    return data;
+};
+
+export const deleteWhatsAppContact = async (id: string): Promise<void> => {
+    await api.delete(`/whatsapp-contacts/${id}`);
 };
 
 export default api;

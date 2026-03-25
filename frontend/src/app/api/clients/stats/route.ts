@@ -5,6 +5,7 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get('search') || '';
+        const criticalThreshold = parseInt(searchParams.get('criticalThreshold') || '2');
 
         // Get total count
         let countQuery = supabase
@@ -47,11 +48,11 @@ export async function GET(request: Request) {
         const { count: totalCurrent, error: currentError } = await currentQuery;
         if (currentError) throw currentError;
 
-        // Get critical count (>= 2 installments)
+        // Get critical count (>= criticalThreshold)
         let criticalQuery = supabase
             .from('Client')
             .select('*', { count: 'exact', head: true })
-            .gte('overdueInstallments', 2);
+            .gte('overdueInstallments', criticalThreshold);
 
         if (search) {
             const searchLower = search.toLowerCase();

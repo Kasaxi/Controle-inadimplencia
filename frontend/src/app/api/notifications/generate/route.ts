@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
-export async function POST() {
+export async function POST(request: Request) {
     try {
+        const body = await request.json().catch(() => ({}));
+        
+        // Settings from request body (sent from frontend)
+        const CRITICAL_THRESHOLD = body.criticalThreshold ?? 2;
+        const ALERT_THRESHOLD = body.alertThreshold ?? 1;
+        const REMINDER_DAYS = body.reminderDays ?? 30;
+
         const { data: clients, error: clientsError } = await supabase
             .from('Client')
             .select('*');
@@ -12,13 +19,10 @@ export async function POST() {
         const now = new Date();
         let created = 0;
 
-        const CRITICAL_THRESHOLD = 3;
-        const ALERT_THRESHOLD = 1;
-        const REMINDER_DAYS = 30;
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
         for (const client of clients) {
-            // Critical
+            // Critical: exceeds critical threshold
             if (client.overdueInstallments > CRITICAL_THRESHOLD) {
                 const { data: exists } = await supabase
                     .from('Notification')
@@ -34,7 +38,7 @@ export async function POST() {
                         "id": crypto.randomUUID(),
                         "type": 'critical',
                         "title": 'Caso Crítico',
-                        "message": `${client.name} está com ${client.overdueInstallments} meses de atraso.`,
+                        "message": `${client.name} está com ${client.overdueInstallments} meses de atraso (limiar: ${CRITICAL_THRESHOLD}).`,
                         "clientId": client.id,
                         "read": false,
                         "createdAt": new Date().toISOString()
@@ -43,7 +47,7 @@ export async function POST() {
                 }
             }
 
-            // Warning
+            // Warning: exceeds alert threshold but not critical
             if (client.overdueInstallments > ALERT_THRESHOLD && client.overdueInstallments <= CRITICAL_THRESHOLD) {
                 const { data: exists } = await supabase
                     .from('Notification')
@@ -87,7 +91,7 @@ export async function POST() {
                             "id": crypto.randomUUID(),
                             "type": 'info',
                             "title": 'Consulta Pendente',
-                            "message": `${client.name} não é consultado há ${daysSince} dias.`,
+                            "message": `${client.name} não é consultado há ${daysSince} dias (limite: ${REMINDER_DAYS} dias).`,
                             "clientId": client.id,
                             "read": false,
                             "createdAt": new Date().toISOString()
@@ -98,9 +102,9 @@ export async function POST() {
             }
         }
 
-        return NextResponse.json({ message: `Generated ${created} new notifications` });
+        return NextResponse.json({ message: `${created} nova(s) notificação(ões) gerada(s)` });
     } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: 'Failed to generate notifications' }, { status: 500 });
+        return NextResponse.json({ error: 'Falha ao gerar notificações' }, { status: 500 });
     }
 }

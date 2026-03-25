@@ -6,6 +6,7 @@ import { useNotifications, useMarkNotificationAsRead, useMarkNotificationAsUnrea
 import { Bell, AlertTriangle, AlertCircle, Info, CheckCheck, Trash2, RefreshCw, ExternalLink, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast, Toaster } from 'sonner';
+import { loadSettings } from '@/lib/settings';
 import type { Notification } from '@/types';
 
 type NotificationType = 'all' | 'critical' | 'warning' | 'info';
@@ -100,7 +101,8 @@ export default function NotificacoesPage() {
 
     const handleGenerate = async () => {
         try {
-            const result = await generateMutation.mutateAsync();
+            const settings = loadSettings();
+            const result = await generateMutation.mutateAsync(settings);
             toast.success(result.message);
         } catch { toast.error('Erro ao gerar notificações'); }
     };
