@@ -29,10 +29,12 @@ interface ClientTableProps {
     onViewContract: (url: string) => void;
     onRefresh?: (silent?: boolean) => void;
     onDelete?: (client: Client) => void;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    onSort?: (key: SortKey) => void;
 }
 
 type SortKey = keyof Client;
-type SortDir = 'asc' | 'desc';
 
 const PARCEL_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -48,9 +50,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     actions: 140,
 };
 
-export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDelete }: ClientTableProps) {
-    const [sortKey, setSortKey] = useState<SortKey | null>(null);
-    const [sortDir, setSortDir] = useState<SortDir>('asc');
+export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDelete, sortBy, sortDir = 'asc', onSort }: ClientTableProps) {
     const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
         if (typeof window === 'undefined') return { ...DEFAULT_WIDTHS };
         try {
@@ -158,18 +158,13 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
     const startW = useRef(0);
 
     const handleSort = (key: SortKey) => {
-        if (sortKey === key) {
-            setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortKey(key);
-            setSortDir('asc');
-        }
+        onSort?.(key);
     };
 
     const sortedClients = [...clients].sort((a, b) => {
-        if (!sortKey) return 0;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
+        if (!sortBy) return 0;
+        const aVal = a[sortBy as keyof Client];
+        const bVal = b[sortBy as keyof Client];
         if (aVal == null && bVal == null) return 0;
         if (aVal == null) return 1;
         if (bVal == null) return -1;
@@ -228,7 +223,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
     };
 
     const SortIcon = ({ col }: { col: SortKey }) => {
-        if (sortKey !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
+        if (sortBy !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
         return sortDir === 'asc'
             ? <ArrowUp className="w-3 h-3 ml-1 text-blue-600" />
             : <ArrowDown className="w-3 h-3 ml-1 text-blue-600" />;

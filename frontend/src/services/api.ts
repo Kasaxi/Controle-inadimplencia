@@ -13,6 +13,16 @@ export interface PaginationParams {
     limit?: number;
     search?: string;
     status?: 'all' | 'overdue' | 'current' | 'critical';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+
+export interface ClientStats {
+    total: number;
+    totalOverdue: number;
+    totalCurrent: number;
+    totalCritical: number;
+    totalInstallments: number;
 }
 
 export interface PaginatedResponse<T> {
@@ -32,8 +42,18 @@ export const getClients = async (params?: PaginationParams): Promise<PaginatedRe
     if (params?.limit) searchParams.set('limit', String(params.limit));
     if (params?.search) searchParams.set('search', params.search);
     if (params?.status) searchParams.set('status', params.status);
+    if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
     
     const { data } = await api.get<PaginatedResponse<Client>>(`/clients?${searchParams.toString()}`);
+    return data;
+};
+
+export const getClientStats = async (search?: string): Promise<ClientStats> => {
+    const searchParams = new URLSearchParams();
+    if (search) searchParams.set('search', search);
+    
+    const { data } = await api.get<ClientStats>(`/clients/stats?${searchParams.toString()}`);
     return data;
 };
 

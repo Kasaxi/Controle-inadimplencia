@@ -8,11 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Pagination } from '@/components/Pagination';
 import { AlertCircle, FileText, PlusCircle, Users, UserX, Search, UserCheck, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
-import { loadSettings } from '@/lib/settings';
-import { useClients, useDeleteClient } from '@/hooks/useApi';
+import '@/lib/settings';
+import { useClients, useDeleteClient, useClientStats } from '@/hooks/useApi';
 import type { Client } from '@/types';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
+type SortKey = 'name' | 'cpf' | 'contactNumber' | 'overdueInstallments' | 'responsible' | 'createdAt';
+type SortDir = 'asc' | 'desc';
 
 interface WaContact {
   id: string;
@@ -26,8 +28,8 @@ export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-
-  const criticalThreshold = loadSettings().criticalThreshold;
+  const [sortBy, setSortBy] = useState<SortKey>('createdAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   // Debounce search
   useEffect(() => {
@@ -38,13 +40,18 @@ export default function HomePage() {
   }, [searchQuery]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setPage(1); }, [activeFilter]);
+  useEffect(() => { setPage(1); }, [activeFilter, debouncedSearch]);
+
+  // Fetch stats (always for total, regardless of filters)
+  const { data: stats } = useClientStats(debouncedSearch);
 
   const { data: response, isLoading, refetch, isFetching } = useClients({
     page,
     limit,
     search: debouncedSearch,
     status: activeFilter,
+    sortBy,
+    sortOrder: sortDir,
   });
 
   const clients = response?.data || [];
@@ -70,20 +77,28 @@ export default function HomePage() {
   const [newWaName, setNewWaName] = useState('');
   const [newWaNumber, setNewWaNumber] = useState('');
 
-  const filteredClients = clients;
+  const handleSort = (key: string) => {
+    const sortKey = key as SortKey;
+    if (sortBy === sortKey) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(sortKey);
+      setSortDir('asc');
+    }
+  };
 
   const tabs: { key: FilterTab; label: string; icon: typeof Users; count: number }[] = [
-    { key: 'all', label: 'Todos', icon: Users, count: pagination?.total || 0 },
-    { key: 'overdue', label: 'Inadimplentes', icon: UserX, count: pagination?.total || 0 },
-    { key: 'current', label: 'Em dia', icon: UserCheck, count: pagination?.total || 0 },
-    { key: 'critical', label: 'Críticos', icon: AlertCircle, count: pagination?.total || 0 },
+    { key: 'all', label: 'Todos', icon: Users, count: stats?.total || 0 },
+    { key: 'overdue', label: 'Inadimplentes', icon: UserX, count: stats?.totalOverdue || 0 },
+    { key: 'current', label: 'Em dia', icon: UserCheck, count: stats?.totalCurrent || 0 },
+    { key: 'critical', label: 'Críticos', icon: AlertCircle, count: stats?.totalCritical || 0 },
   ];
 
-  // Calculate KPIs from current page data (for demo - in production, would need separate API)
-  const totalClients = pagination?.total || 0;
-  const totalOverdue = clients.filter((c) => c.overdueInstallments > 0).length;
-  const totalInstallments = clients.reduce((acc, client) => acc + client.overdueInstallments, 0);
-  const criticalClients = clients.filter((c) => c.overdueInstallments > criticalThreshold).length;
+  // KPIs from stats (global, not filtered by page)
+  const totalClients = stats?.total || 0;
+  const totalOverdue = stats?.totalOverdue || 0;
+  const totalInstallments = stats?.totalInstallments || 0;
+  const criticalClients = stats?.totalCritical || 0;
 
   const kpiCards = [
     {
@@ -198,11 +213,11 @@ export default function HomePage() {
 
     let msg = `${eChart} *Relatório Controle de Inadimplência*\n`;
     msg += `*Filtro Atual:* ${filterName}\n`;
-    msg += `*Total na lista:* ${filteredClients.length} clientes\n\n`;
+    msg += `*Total na lista:* ${clients.length} clientes\n\n`;
 
-    if (filteredClients.length > 0) {
+    if (clients.length > 0) {
         msg += `*Lista de Clientes:*\n`;
-        filteredClients.forEach(c => {
+        clients.forEach(c => {
             msg += `${eUser} *Nome:* ${c.name}\n`;
             if (c.contactNumber) msg += `${ePhone} *Tel:* ${c.contactNumber}\n`;
             if (c.overdueInstallments > 0) {
@@ -338,11 +353,14 @@ export default function HomePage() {
             </div>
           ) : (
             <ClientTable
-              clients={filteredClients}
+              clients={clients}
               onEdit={handleOpenForm}
               onDelete={handleDeleteClick}
               onViewContract={handleViewContract}
               onRefresh={() => refetch()}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={handleSort}
             />
           )}
           
@@ -415,7 +433,7 @@ export default function HomePage() {
               </DialogTitle>
             </DialogHeader>
             <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-              O relatório será gerado com <strong className="text-slate-700">{filteredClients.length} cliente(s)</strong> do filtro atual (<strong className="text-slate-700">{tabs.find(t => t.key === activeFilter)?.label || 'Todos'}</strong>). 
+              O relatório será gerado com <strong className="text-slate-700">{clients.length} cliente(s)</strong> do filtro atual (<strong className="text-slate-700">{tabs.find(t => t.key === activeFilter)?.label || 'Todos'}</strong>). 
             </p>
           </div>
 

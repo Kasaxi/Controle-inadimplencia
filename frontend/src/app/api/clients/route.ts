@@ -10,7 +10,9 @@ export async function GET(request: Request) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = Math.min(parseInt(searchParams.get('limit') || String(DEFAULT_PAGE_SIZE)), 100);
         const search = searchParams.get('search') || '';
-        const status = searchParams.get('status'); // 'all', 'overdue', 'current', 'critical'
+        const status = searchParams.get('status');
+        const sortBy = searchParams.get('sortBy') || 'createdAt';
+        const sortOrder = searchParams.get('sortOrder') || 'desc';
         
         const from = (page - 1) * limit;
         const to = from + limit - 1;
@@ -35,7 +37,7 @@ export async function GET(request: Request) {
         }
 
         const { data, error, count } = await query
-            .order('createdAt', { ascending: false })
+            .order(sortBy, { ascending: sortOrder === 'asc' })
             .range(from, to);
 
         if (error) throw error;

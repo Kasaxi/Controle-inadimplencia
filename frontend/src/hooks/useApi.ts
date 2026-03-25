@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getClients,
+  getClientStats,
   createClient,
   updateClient,
   deleteClient,
@@ -26,6 +27,13 @@ export function useClients(params?: PaginationParams) {
   return useQuery({
     queryKey: queryKeys.clients(params),
     queryFn: () => getClients(params),
+  });
+}
+
+export function useClientStats(search?: string) {
+  return useQuery({
+    queryKey: ['clientStats', search] as const,
+    queryFn: () => getClientStats(search),
   });
 }
 
