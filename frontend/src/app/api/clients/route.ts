@@ -11,6 +11,7 @@ export async function GET(request: Request) {
         const limit = Math.min(parseInt(searchParams.get('limit') || String(DEFAULT_PAGE_SIZE)), 100);
         const search = searchParams.get('search') || '';
         const status = searchParams.get('status');
+        const criticalThreshold = parseInt(searchParams.get('criticalThreshold') || '2');
         const sortBy = searchParams.get('sortBy') || 'createdAt';
         const sortOrder = searchParams.get('sortOrder') || 'desc';
         
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
         } else if (status === 'current') {
             query = query.eq('overdueInstallments', 0);
         } else if (status === 'critical') {
-            query = query.gte('overdueInstallments', 2);
+            query = query.gte('overdueInstallments', criticalThreshold);
         }
 
         const { data, error, count } = await query

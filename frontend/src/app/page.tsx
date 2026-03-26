@@ -47,6 +47,7 @@ export default function HomePage() {
     status: activeFilter,
     sortBy,
     sortOrder: sortDir,
+    criticalThreshold: settings.criticalThreshold,
   });
 
   const clients = response?.data || [];

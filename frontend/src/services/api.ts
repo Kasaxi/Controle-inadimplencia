@@ -15,6 +15,7 @@ export interface PaginationParams {
     status?: 'all' | 'overdue' | 'current' | 'critical';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    criticalThreshold?: number;
 }
 
 export interface ClientStats {
@@ -44,6 +45,7 @@ export const getClients = async (params?: PaginationParams): Promise<PaginatedRe
     if (params?.status) searchParams.set('status', params.status);
     if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
     if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+    if (params?.criticalThreshold !== undefined) searchParams.set('criticalThreshold', String(params.criticalThreshold));
     
     const { data } = await api.get<PaginatedResponse<Client>>(`/clients?${searchParams.toString()}`);
     return data;
