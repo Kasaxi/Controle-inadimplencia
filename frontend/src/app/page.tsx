@@ -63,7 +63,7 @@ export default function HomePage() {
   const [isWhatsappModalOpen, setIsWhatsappModalOpen] = useState(false);
   
   // WhatsApp contacts from API (synced across browsers)
-  const { data: waContacts = [] } = useWhatsAppContacts();
+  const { data: waContacts = [], refetch: refetchWaContacts, isFetching: isFetchingWaContacts } = useWhatsAppContacts();
   const createContactMutation = useCreateWhatsAppContact();
   const deleteContactMutation = useDeleteWhatsAppContact();
   
@@ -201,6 +201,7 @@ export default function HomePage() {
       setNewWaName('');
       setNewWaNumber('');
       toast.success('Contato salvo!');
+      await refetchWaContacts();
     } catch {
       toast.error('Erro ao salvar contato');
     }
@@ -278,7 +279,7 @@ export default function HomePage() {
           >
             <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${isFetching ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={() => setIsWhatsappModalOpen(true)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
+          <Button onClick={() => { refetchWaContacts(); setIsWhatsappModalOpen(true); }} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
             <MessageSquare className="h-4 w-4" />
             Relatório
           </Button>
@@ -450,7 +451,11 @@ export default function HomePage() {
           <div className="p-6 pt-4 max-h-[60vh] overflow-y-auto">
             <div className="mb-6">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Contatos Salvos</h4>
-              {waContacts.length === 0 ? (
+              {isFetchingWaContacts ? (
+                <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <p className="text-sm text-slate-400">Carregando...</p>
+                </div>
+              ) : waContacts.length === 0 ? (
                 <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   <p className="text-sm text-slate-400">Nenhum contato salvo ainda.</p>
                 </div>
