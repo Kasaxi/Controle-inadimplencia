@@ -6,7 +6,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('WhatsAppContact')
             .select('id, name, number, createdAt:createdat, updatedAt:updatedat')
-            .order('createdAt', { ascending: false });
+            .order('createdat', { ascending: false });
 
         if (error) throw error;
         return NextResponse.json(data);
