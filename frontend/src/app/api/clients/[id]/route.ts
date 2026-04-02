@@ -23,7 +23,7 @@ export async function PUT(request: Request, context: RouteParams) {
             "updatedAt": new Date().toISOString()
         };
         
-        const validKeys: (keyof ClientUpdateInput)[] = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus'];
+        const validKeys: (keyof ClientUpdateInput)[] = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus', 'isNewClient'];
         
         validKeys.forEach(key => {
             if (updateData[key] !== undefined) {

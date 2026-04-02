@@ -61,6 +61,20 @@ export async function GET(request: Request) {
 
         const { count: totalCritical, error: criticalError } = await criticalQuery;
         if (criticalError) throw criticalError;
+        
+        // Get new clients count (isNewClient: true)
+        let newClientsQuery = supabase
+            .from('Client')
+            .select('*', { count: 'exact', head: true })
+            .eq('isNewClient', true);
+
+        if (search) {
+            const searchLower = search.toLowerCase();
+            newClientsQuery = newClientsQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
+        }
+
+        const { count: totalNewClients, error: newClientsError } = await newClientsQuery;
+        if (newClientsError) throw newClientsError;
 
         // Get total installments sum
         let sumQuery = supabase
@@ -82,6 +96,7 @@ export async function GET(request: Request) {
             totalOverdue: totalOverdue || 0,
             totalCurrent: totalCurrent || 0,
             totalCritical: totalCritical || 0,
+            totalNewClients: totalNewClients || 0,
             totalInstallments
         });
     } catch (error) {

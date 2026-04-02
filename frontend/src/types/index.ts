@@ -10,6 +10,7 @@ export interface Client {
   fileUrl: string | null;
   consultationDate: string | null;
   alertStatus: string | null;
+  isNewClient: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,6 +25,7 @@ export interface ClientCreateInput {
   observation?: string | null;
   consultationDate?: string | null;
   fileUrl?: string | null;
+  isNewClient?: boolean;
 }
 
 export interface ClientUpdateInput {
@@ -37,6 +39,7 @@ export interface ClientUpdateInput {
   consultationDate?: string | null;
   fileUrl?: string | null;
   alertStatus?: string | null;
+  isNewClient?: boolean;
 }
 
 export type NotificationType = 'critical' | 'warning' | 'info';

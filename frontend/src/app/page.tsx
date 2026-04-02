@@ -12,7 +12,7 @@ import { loadSettings } from '@/lib/settings';
 import { useClients, useDeleteClient, useClientStats, useWhatsAppContacts, useCreateWhatsAppContact, useDeleteWhatsAppContact } from '@/hooks/useApi';
 import type { Client } from '@/types';
 
-type FilterTab = 'all' | 'overdue' | 'current' | 'critical';
+type FilterTab = 'all' | 'overdue' | 'current' | 'critical' | 'new';
 type SortKey = 'name' | 'cpf' | 'contactNumber' | 'overdueInstallments' | 'responsible' | 'createdAt';
 type SortDir = 'asc' | 'desc';
 
@@ -85,6 +85,7 @@ export default function HomePage() {
     { key: 'overdue', label: 'Inadimplentes', icon: UserX, count: stats?.totalOverdue || 0 },
     { key: 'current', label: 'Em dia', icon: UserCheck, count: stats?.totalCurrent || 0 },
     { key: 'critical', label: 'Críticos', icon: AlertCircle, count: stats?.totalCritical || 0 },
+    { key: 'new', label: 'Novos', icon: PlusCircle, count: stats?.totalNewClients || 0 },
   ];
 
   // KPIs from stats (global, not filtered by page)
@@ -93,6 +94,7 @@ export default function HomePage() {
   const totalOverdue = stats?.totalOverdue || 0;
   const totalInstallments = stats?.totalInstallments || 0;
   const criticalClients = stats?.totalCritical || 0;
+  const totalNewClients = stats?.totalNewClients || 0;
 
   const kpiCards = [
     {
@@ -139,6 +141,15 @@ export default function HomePage() {
       gradient: 'from-indigo-500 to-violet-500',
       shadowColor: 'shadow-indigo-500/20',
       filter: 'overdue' as FilterTab,
+    },
+    {
+      title: 'Clientes Novos',
+      value: totalNewClients,
+      subtitle: totalClients > 0 ? `${Math.round((totalNewClients / Math.max(totalClients, 1)) * 100)}% da base` : 'Nenhum novo',
+      icon: PlusCircle,
+      gradient: totalNewClients > 0 ? 'from-fuchsia-500 to-purple-600' : 'from-slate-400 to-slate-500',
+      shadowColor: totalNewClients > 0 ? 'shadow-fuchsia-500/20' : 'shadow-slate-400/10',
+      filter: 'new' as FilterTab,
     },
   ];
 

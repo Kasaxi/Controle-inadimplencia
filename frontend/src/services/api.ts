@@ -12,7 +12,7 @@ export interface PaginationParams {
     page?: number;
     limit?: number;
     search?: string;
-    status?: 'all' | 'overdue' | 'current' | 'critical';
+    status?: 'all' | 'overdue' | 'current' | 'critical' | 'new';
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     criticalThreshold?: number;
@@ -23,6 +23,7 @@ export interface ClientStats {
     totalOverdue: number;
     totalCurrent: number;
     totalCritical: number;
+    totalNewClients: number;
     totalInstallments: number;
 }
 

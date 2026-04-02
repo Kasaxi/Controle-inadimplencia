@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { createClient, updateClient } from '@/services/api';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
@@ -10,7 +17,7 @@ import { Loader2 } from 'lucide-react';
 import type { ClientCreateInput, ClientUpdateInput } from '@/types';
 
 interface ClientFormProps {
-    initialData?: (Partial<ClientCreateInput> & { id?: string }) | null;
+    initialData?: (Partial<ClientCreateInput> & { id?: string; isNewClient?: boolean }) | null;
     onSuccess: () => void;
     onCancel: () => void;
 }
@@ -39,6 +46,7 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
     const [file, setFile] = useState<File | null>(null);
     const [cpf, setCpf] = useState(formatCPF(initialData?.cpf || ''));
     const [phone, setPhone] = useState(formatPhone(initialData?.contactNumber || ''));
+    const [isNewClient, setIsNewClient] = useState(initialData?.isNewClient ?? false);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -63,6 +71,7 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
                 observation: String(formData.get('observation') ?? '') || null,
                 consultationDate: String(formData.get('consultationDate') || '') || null,
                 fileUrl: initialData?.fileUrl || null,
+                isNewClient: isNewClient,
             };
 
             if (file) {
@@ -136,9 +145,24 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
                     <Label htmlFor="overdueInstallments">Parcelas Atrasadas</Label>
                     <Input id="overdueInstallments" name="overdueInstallments" type="number" min="0" required defaultValue={initialData?.overdueInstallments || 0} />
                 </div>
-                <div className="space-y-2 col-span-2">
+                <div className="space-y-2">
                     <Label htmlFor="address">Endereço</Label>
                     <Input id="address" name="address" defaultValue={initialData?.address ?? ''} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="isNewClient">Tipo de Cliente</Label>
+                    <Select 
+                        value={isNewClient ? "true" : "false"} 
+                        onValueChange={(val) => setIsNewClient(val === "true")}
+                    >
+                        <SelectTrigger id="isNewClient" className="w-full h-10 border-slate-200">
+                            <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="false">Cliente Antigo</SelectItem>
+                            <SelectItem value="true">Cliente Novo</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="responsible">Responsável</Label>

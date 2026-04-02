@@ -292,7 +292,14 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                             <tr key={client.id} className="border-b border-slate-100 hover:bg-blue-50/30 transition-colors">
                                 {/* Cliente - Sticky */}
                                 <td className="sticky left-0 z-10 bg-white px-4 py-3 font-medium text-slate-900 whitespace-nowrap shadow-[2px_0_5px_-2px_rgba(0,0,0,0.06)] border-r border-slate-200/60 overflow-hidden text-ellipsis">
-                                    {renderCell(client, 'name', client.name)}
+                                    <div className="flex items-center gap-2">
+                                        {renderCell(client, 'name', client.name)}
+                                        {client.isNewClient && (
+                                            <Badge className="bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200 text-[10px] px-1.5 py-0 h-4 uppercase font-bold shrink-0">
+                                                Novo
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </td>
                                 {/* CPF */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap font-mono text-xs border-r border-slate-200/60 overflow-hidden text-ellipsis">

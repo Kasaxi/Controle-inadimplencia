@@ -35,6 +35,8 @@ export async function GET(request: Request) {
             query = query.eq('overdueInstallments', 0);
         } else if (status === 'critical') {
             query = query.gte('overdueInstallments', criticalThreshold);
+        } else if (status === 'new') {
+            query = query.eq('isNewClient', true);
         }
 
         const { data, error, count } = await query
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
                 "observation": body.observation,
                 "fileUrl": body.fileUrl,
                 "consultationDate": body.consultationDate || null,
+                "isNewClient": body.isNewClient === true,
                 "createdAt": now,
                 "updatedAt": now,
             }])
