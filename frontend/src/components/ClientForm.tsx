@@ -11,7 +11,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { createClient, updateClient } from '@/services/api';
-import { supabase } from '@/lib/supabaseClient';
+import { appwriteStorage, BUCKET_ID, ID } from '@/lib/appwriteClient';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import type { ClientCreateInput, ClientUpdateInput } from '@/types';
@@ -75,21 +75,14 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
             };
 
             if (file) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
-                const filePath = `${fileName}`;
+                const response = await appwriteStorage.createFile(
+                    BUCKET_ID,
+                    ID.unique(),
+                    file
+                );
 
-                const { error: uploadError } = await supabase.storage
-                    .from('contracts')
-                    .upload(filePath, file);
-
-                if (uploadError) throw uploadError;
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('contracts')
-                    .getPublicUrl(filePath);
-
-                clientData.fileUrl = publicUrl;
+                const fileUrlResult = appwriteStorage.getFileView(BUCKET_ID, response.$id);
+                clientData.fileUrl = fileUrlResult.toString();
             }
 
             if (initialData?.id) {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
-import type { Notification } from '@/types';
+import { appwriteServer, DB_ID, NOTIFICATIONS_ID } from '@/lib/appwriteServer';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -9,16 +8,16 @@ interface RouteParams {
 export async function PUT(_request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
-        const { data, error } = await supabase
-            .from('Notification')
-            .update({ read: false })
-            .eq('"id"', String(id))
-            .select()
-            .single();
+        await appwriteServer.databases.updateDocument(
+            DB_ID,
+            NOTIFICATIONS_ID,
+            String(id),
+            { read: false }
+        );
 
-        if (error) throw error;
-        return NextResponse.json(data as Notification);
-    } catch {
-        return NextResponse.json({ error: 'Failed to mark notification as unread' }, { status: 500 });
+        return NextResponse.json({ message: 'Marked as unread' });
+    } catch (error) {
+        console.error('Error marking as unread:', error);
+        return NextResponse.json({ error: 'Failed to mark as unread' }, { status: 500 });
     }
 }

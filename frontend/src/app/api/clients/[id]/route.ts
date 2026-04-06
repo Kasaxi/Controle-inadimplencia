@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { appwriteServer, DB_ID, CLIENTS_ID } from '@/lib/appwriteServer';
 import type { ClientUpdateInput, Client } from '@/types';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
+}
+
+// Helper to map Appwrite document to Client type matching frontend expectations
+function mapDocumentToClient(doc: any): Client {
+    const { $id, $createdAt, $updatedAt, $collectionId, $databaseId, $permissions, ...rest } = doc;
+    return {
+        id: $id,
+        ...rest,
+        createdAt: doc.createdAt || $createdAt,
+        updatedAt: doc.updatedAt || $updatedAt,
+    } as Client;
 }
 
 export async function PUT(request: Request, context: RouteParams) {
@@ -20,7 +31,7 @@ export async function PUT(request: Request, context: RouteParams) {
         }
 
         const mappedUpdate: Record<string, unknown> = {
-            "updatedAt": new Date().toISOString()
+            updatedAt: new Date().toISOString()
         };
         
         const validKeys: (keyof ClientUpdateInput)[] = ['name', 'cpf', 'contactNumber', 'overdueInstallments', 'address', 'responsible', 'observation', 'fileUrl', 'consultationDate', 'alertStatus', 'isNewClient'];
@@ -31,15 +42,14 @@ export async function PUT(request: Request, context: RouteParams) {
             }
         });
 
-        const { data, error } = await supabase
-            .from('Client')
-            .update(mappedUpdate)
-            .eq('id', String(id))
-            .select()
-            .single();
+        const doc = await appwriteServer.databases.updateDocument(
+            DB_ID,
+            CLIENTS_ID,
+            id,
+            mappedUpdate
+        );
 
-        if (error) throw error;
-        return NextResponse.json(data as Client);
+        return NextResponse.json(mapDocumentToClient(doc));
     } catch (error) {
         const err = error as Error;
         console.error('Error updating client:', err.message);
@@ -50,12 +60,12 @@ export async function PUT(request: Request, context: RouteParams) {
 export async function DELETE(_request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
-        const { error } = await supabase
-            .from('Client')
-            .delete()
-            .eq('id', String(id));
+        await appwriteServer.databases.deleteDocument(
+            DB_ID,
+            CLIENTS_ID,
+            id
+        );
 
-        if (error) throw error;
         return NextResponse.json({ message: 'Client deleted successfully' });
     } catch (error) {
         console.error('Error deleting client:', error);

@@ -1,18 +1,23 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { Query } from 'node-appwrite';
+import { appwriteServer, DB_ID, NOTIFICATIONS_ID } from '@/lib/appwriteServer';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const { count, error } = await supabase
-            .from('Notification')
-            .select('*', { count: 'exact', head: true })
-            .eq('read', false);
+        const response = await appwriteServer.databases.listDocuments(
+            DB_ID,
+            NOTIFICATIONS_ID,
+            [
+                Query.equal('read', false),
+                Query.limit(1) // Only limit 1 to get total efficiency
+            ]
+        );
 
-        if (error) throw error;
-        return NextResponse.json({ count: count ?? 0 });
-    } catch {
+        return NextResponse.json({ count: response.total ?? 0 });
+    } catch (error) {
+        console.error('Error fetching unread count:', error);
         return NextResponse.json({ error: 'Failed to get count' }, { status: 500 });
     }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { appwriteServer, DB_ID, NOTIFICATIONS_ID } from '@/lib/appwriteServer';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -8,14 +8,11 @@ interface RouteParams {
 export async function DELETE(_request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
-        const { error } = await supabase
-            .from('Notification')
-            .delete()
-            .eq('"id"', String(id));
+        await appwriteServer.databases.deleteDocument(DB_ID, NOTIFICATIONS_ID, String(id));
 
-        if (error) throw error;
         return NextResponse.json({ message: 'Notification deleted' });
-    } catch {
+    } catch (error) {
+        console.error('Error deleting notification:', error);
         return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });
     }
 }

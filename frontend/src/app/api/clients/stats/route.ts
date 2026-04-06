@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { Query } from 'node-appwrite';
+import { appwriteServer, DB_ID, CLIENTS_ID } from '@/lib/appwriteServer';
 
 export async function GET(request: Request) {
     try {
@@ -7,89 +8,41 @@ export async function GET(request: Request) {
         const search = searchParams.get('search') || '';
         const criticalThreshold = parseInt(searchParams.get('criticalThreshold') || '2');
 
-        // Get total count
-        let countQuery = supabase
-            .from('Client')
-            .select('*', { count: 'exact', head: true });
+        const baseQueries = [Query.limit(1)]; // Limit 1 to only get the total count efficiently
 
         if (search) {
-            const searchLower = search.toLowerCase();
-            countQuery = countQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
+            baseQueries.push(Query.or([
+                Query.contains('name', search),
+                Query.contains('cpf', search),
+                Query.contains('responsible', search)
+            ]));
         }
 
-        const { count: total, error: totalError } = await countQuery;
-        if (totalError) throw totalError;
+        const getCount = async (additionalQueries: string[] = []) => {
+            const res = await appwriteServer.databases.listDocuments(DB_ID, CLIENTS_ID, [...baseQueries, ...additionalQueries]);
+            return res.total;
+        };
 
-        // Get overdue count
-        let overdueQuery = supabase
-            .from('Client')
-            .select('*', { count: 'exact', head: true })
-            .gt('overdueInstallments', 0);
+        const totalP = getCount();
+        const totalOverdueP = getCount([Query.greaterThan('overdueInstallments', 0)]);
+        const totalCurrentP = getCount([Query.equal('overdueInstallments', 0)]);
+        const totalCriticalP = getCount([Query.greaterThanEqual('overdueInstallments', criticalThreshold)]);
+        const totalNewClientsP = getCount([Query.equal('isNewClient', true)]);
 
+        // For total installments we need all records to sum them up. 
+        // If there are many records, we should use pagination. For stats assuming reasonable dataset size for now.
+        const sumQueries = [Query.limit(5000), Query.select(['overdueInstallments'])];
         if (search) {
-            const searchLower = search.toLowerCase();
-            overdueQuery = overdueQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
+             sumQueries.push(baseQueries[1]); // The search query
         }
 
-        const { count: totalOverdue, error: overdueError } = await overdueQuery;
-        if (overdueError) throw overdueError;
+        const installmentDataP = appwriteServer.databases.listDocuments(DB_ID, CLIENTS_ID, sumQueries);
 
-        // Get current count (no overdue)
-        let currentQuery = supabase
-            .from('Client')
-            .select('*', { count: 'exact', head: true })
-            .eq('overdueInstallments', 0);
+        const [total, totalOverdue, totalCurrent, totalCritical, totalNewClients, installmentData] = await Promise.all([
+            totalP, totalOverdueP, totalCurrentP, totalCriticalP, totalNewClientsP, installmentDataP
+        ]);
 
-        if (search) {
-            const searchLower = search.toLowerCase();
-            currentQuery = currentQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
-        }
-
-        const { count: totalCurrent, error: currentError } = await currentQuery;
-        if (currentError) throw currentError;
-
-        // Get critical count (>= criticalThreshold)
-        let criticalQuery = supabase
-            .from('Client')
-            .select('*', { count: 'exact', head: true })
-            .gte('overdueInstallments', criticalThreshold);
-
-        if (search) {
-            const searchLower = search.toLowerCase();
-            criticalQuery = criticalQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
-        }
-
-        const { count: totalCritical, error: criticalError } = await criticalQuery;
-        if (criticalError) throw criticalError;
-        
-        // Get new clients count (isNewClient: true)
-        let newClientsQuery = supabase
-            .from('Client')
-            .select('*', { count: 'exact', head: true })
-            .eq('isNewClient', true);
-
-        if (search) {
-            const searchLower = search.toLowerCase();
-            newClientsQuery = newClientsQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
-        }
-
-        const { count: totalNewClients, error: newClientsError } = await newClientsQuery;
-        if (newClientsError) throw newClientsError;
-
-        // Get total installments sum
-        let sumQuery = supabase
-            .from('Client')
-            .select('overdueInstallments');
-
-        if (search) {
-            const searchLower = search.toLowerCase();
-            sumQuery = sumQuery.or(`name.ilike.%${searchLower}%,cpf.ilike.%${searchLower}%,responsible.ilike.%${searchLower}%`);
-        }
-
-        const { data: installmentData, error: sumError } = await sumQuery;
-        if (sumError) throw sumError;
-
-        const totalInstallments = installmentData?.reduce((acc, c) => acc + (c.overdueInstallments || 0), 0) || 0;
+        const totalInstallments = installmentData.documents.reduce((acc, c) => acc + (c.overdueInstallments || 0), 0);
 
         return NextResponse.json({
             total: total || 0,

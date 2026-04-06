@@ -1,14 +1,26 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { Query, ID } from 'node-appwrite';
+import { appwriteServer, DB_ID, CONTACTS_ID } from '@/lib/appwriteServer';
 
 export async function GET() {
     try {
-        const { data, error } = await supabase
-            .from('WhatsAppContact')
-            .select('id, name, number, createdAt:createdat, updatedAt:updatedat')
-            .order('createdat', { ascending: false });
+        const response = await appwriteServer.databases.listDocuments(
+            DB_ID,
+            CONTACTS_ID,
+            [
+                Query.orderDesc('createdAt'),
+                Query.limit(50)
+            ]
+        );
 
-        if (error) throw error;
+        const data = response.documents.map(doc => ({
+            id: doc.$id,
+            name: doc.name,
+            number: doc.number,
+            createdAt: doc.createdAt || doc.$createdAt,
+            updatedAt: doc.updatedAt || doc.$updatedAt
+        }));
+
         return NextResponse.json(data);
     } catch (error) {
         console.error('Error fetching WhatsApp contacts:', error);
@@ -25,17 +37,26 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Name and number are required' }, { status: 400 });
         }
 
-        const { data, error } = await supabase
-            .from('WhatsAppContact')
-            .insert([{
+        const now = new Date().toISOString();
+        const doc = await appwriteServer.databases.createDocument(
+            DB_ID,
+            CONTACTS_ID,
+            ID.unique(),
+            {
                 name,
                 number,
-            }])
-            .select('id, name, number, createdAt:createdat, updatedAt:updatedat')
-            .single();
+                createdAt: now,
+                updatedAt: now
+            }
+        );
 
-        if (error) throw error;
-        return NextResponse.json(data, { status: 201 });
+        return NextResponse.json({
+            id: doc.$id,
+            name: doc.name,
+            number: doc.number,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt
+        }, { status: 201 });
     } catch (error) {
         console.error('Error creating WhatsApp contact:', error);
         return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });

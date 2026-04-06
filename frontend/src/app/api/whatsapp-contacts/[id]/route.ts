@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { appwriteServer, DB_ID, CONTACTS_ID } from '@/lib/appwriteServer';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -8,12 +8,8 @@ interface RouteParams {
 export async function DELETE(_request: Request, context: RouteParams) {
     try {
         const { id } = await context.params;
-        const { error } = await supabase
-            .from('WhatsAppContact')
-            .delete()
-            .eq('id', id);
+        await appwriteServer.databases.deleteDocument(DB_ID, CONTACTS_ID, id);
 
-        if (error) throw error;
         return NextResponse.json({ message: 'Contact deleted successfully' });
     } catch (error) {
         console.error('Error deleting WhatsApp contact:', error);
