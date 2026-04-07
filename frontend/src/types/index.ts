@@ -11,6 +11,9 @@ export interface Client {
   consultationDate: string | null;
   alertStatus: string | null;
   isNewClient: boolean;
+  p1Paid: boolean;
+  p2Paid: boolean;
+  p3Paid: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +29,9 @@ export interface ClientCreateInput {
   consultationDate?: string | null;
   fileUrl?: string | null;
   isNewClient?: boolean;
+  p1Paid?: boolean;
+  p2Paid?: boolean;
+  p3Paid?: boolean;
 }
 
 export interface ClientUpdateInput {
@@ -40,6 +46,9 @@ export interface ClientUpdateInput {
   fileUrl?: string | null;
   alertStatus?: string | null;
   isNewClient?: boolean;
+  p1Paid?: boolean;
+  p2Paid?: boolean;
+  p3Paid?: boolean;
 }
 
 export type NotificationType = 'critical' | 'warning' | 'info';

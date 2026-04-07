@@ -47,6 +47,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     consultationDate: 140,
     observation: 200,
     fileUrl: 120,
+    firstInstallments: 110,
     actions: 140,
 };
 
@@ -222,6 +223,36 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         }
     };
 
+    const handleInstallmentToggle = async (client: Client, installment: 1 | 2 | 3) => {
+        if (!client.isNewClient) return;
+
+        const key = `p${installment}Paid`;
+        const currentVal = client[key as keyof Client] as boolean;
+        const newVal = !currentVal;
+        
+        const payload: Record<string, boolean> = { [key]: newVal };
+        
+        const futureP1 = installment === 1 ? newVal : client.p1Paid;
+        const futureP2 = installment === 2 ? newVal : client.p2Paid;
+        const futureP3 = installment === 3 ? newVal : client.p3Paid;
+        
+        if (futureP1 && futureP2 && futureP3) {
+            payload.isNewClient = false;
+        }
+        
+        try {
+            await updateClient(String(client.id), payload as any);
+            if (payload.isNewClient === false) {
+                toast.success(`Parabéns! ${client.name} fez os 3 pagamentos e não é mais "Novo".`);
+            } else {
+                toast.success(`A parcela ${installment} de ${client.name} foi atualizada!`);
+            }
+            onRefresh?.(true);
+        } catch {
+            toast.error("Erro ao atualizar parcela.");
+        }
+    };
+
     const SortIcon = ({ col }: { col: SortKey }) => {
         if (sortBy !== col) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
         return sortDir === 'asc'
@@ -238,6 +269,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         { key: 'consultationDate', label: 'Última Consulta' },
         { key: 'observation', label: 'Observações' },
         { key: 'fileUrl', label: 'Contrato' },
+        { key: 'firstInstallments', label: '3 Primeiras' },
         { key: 'actions', label: 'Ações' },
     ];
 
@@ -250,7 +282,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                     <tr className="border-b border-slate-200 bg-slate-50/80">
                         {columns.map((col, idx) => {
                             const width = colWidths[col.key] || DEFAULT_WIDTHS[col.key];
-                            const isSortable = col.key !== 'fileUrl' && col.key !== 'actions';
+                            const isSortable = col.key !== 'fileUrl' && col.key !== 'actions' && col.key !== 'firstInstallments';
                             const isLast = idx === columns.length - 1;
                             return (
                                 <th
@@ -397,6 +429,38 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                     ) : (
                                         <span className="text-slate-300 text-xs">Sem arquivo</span>
                                     )}
+                                </td>
+                                {/* 3 Primeiras */}
+                                <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60 text-center">
+                                    <div className="flex justify-center gap-1.5">
+                                        {[1, 2, 3].map(num => {
+                                            const paid = client[`p${num}Paid` as keyof Client] as boolean;
+                                            const disabled = !client.isNewClient;
+                                            
+                                            let btnClasses = '';
+                                            if (disabled) {
+                                                btnClasses = paid
+                                                    ? 'bg-slate-200 text-slate-400 border-transparent cursor-not-allowed' 
+                                                    : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed';
+                                            } else {
+                                                btnClasses = paid 
+                                                    ? 'bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-600 font-bold hover:brightness-110 cursor-pointer' 
+                                                    : 'bg-white text-slate-400 border border-slate-300 hover:border-emerald-400 hover:text-emerald-500 hover:bg-emerald-50 shadow-sm cursor-pointer';
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={num}
+                                                    onClick={() => !disabled && handleInstallmentToggle(client, num as 1|2|3)}
+                                                    disabled={disabled}
+                                                    className={`w-7 h-7 rounded-md text-[11px] font-medium transition-all flex items-center justify-center ${btnClasses}`}
+                                                    title={disabled ? (paid ? `Parcela ${num} paga` : `Parcela ${num} não paga`) : `Marcar/desmarcar parcela ${num}`}
+                                                >
+                                                    {num}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </td>
                                 {/* Ações */}
                                 <td className="px-4 py-3 text-right whitespace-nowrap">
