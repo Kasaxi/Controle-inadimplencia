@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   getClients,
   getClientStats,
@@ -30,6 +30,7 @@ export function useClients(params?: PaginationParams) {
   return useQuery({
     queryKey: queryKeys.clients(params),
     queryFn: () => getClients(params),
+    placeholderData: keepPreviousData,
   });
 }
 
