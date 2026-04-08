@@ -186,7 +186,8 @@ export default function HomePage() {
   };
 
   const handleViewContract = (url: string) => {
-    setPreviewUrl(url);
+    const finalUrl = url.startsWith('http') ? `/api/proxy-file?url=${encodeURIComponent(url)}` : url;
+    setPreviewUrl(finalUrl);
     setIsPreviewOpen(true);
   };
 
