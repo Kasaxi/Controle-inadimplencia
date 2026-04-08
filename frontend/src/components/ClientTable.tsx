@@ -410,7 +410,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                 </td>
                                 {/* Última Consulta */}
                                 <td className="px-4 py-3 text-slate-700 whitespace-nowrap border-r border-slate-200/60">
-                                    {renderCell(client, 'consultationDate', client.consultationDate ? format(new Date(client.consultationDate), "dd/MM/yyyy", { locale: ptBR }) : '-', 'date')}
+                                    {renderCell(client, 'consultationDate', client.consultationDate ? client.consultationDate.split('T')[0].split('-').reverse().join('/') : '-', 'date')}
                                 </td>
                                 {/* Observações */}
                                 <td className="px-4 py-3 text-slate-600 border-r border-slate-200/60 overflow-hidden">

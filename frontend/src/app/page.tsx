@@ -273,7 +273,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" richColors />
 
       <div className="flex justify-between items-center">
         <div>

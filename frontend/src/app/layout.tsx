@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   description: 'Gestão de parcelas e contratos dos clientes da Caixa.',
 };
 
+import { Toaster } from 'sonner';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,6 +27,7 @@ export default function RootLayout({
       <body className={`${jakarta.variable} font-sans antialiased`}>
         <ClientProviders>
           <AppLayout>{children}</AppLayout>
+          <Toaster position="top-right" richColors toastOptions={{ style: { zIndex: 99999 } }} />
         </ClientProviders>
       </body>
     </html>
