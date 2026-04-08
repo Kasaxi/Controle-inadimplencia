@@ -96,6 +96,9 @@ export async function POST(request: Request) {
             fileUrl: body.fileUrl || null,
             consultationDate: body.consultationDate || null,
             isNewClient: body.isNewClient === true,
+            p1Paid: body.p1Paid === true,
+            p2Paid: body.p2Paid === true,
+            p3Paid: body.p3Paid === true,
             createdAt: now,
             updatedAt: now,
         };
