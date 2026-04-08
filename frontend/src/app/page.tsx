@@ -116,15 +116,6 @@ export default function HomePage() {
       filter: 'current' as FilterTab,
     },
     {
-      title: 'Inadimplentes',
-      value: totalOverdue,
-      subtitle: totalClients > 0 ? `${Math.round((totalOverdue / Math.max(totalClients, 1)) * 100)}% da carteira` : 'Nenhum cliente',
-      icon: UserX,
-      gradient: totalOverdue > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
-      shadowColor: totalOverdue > 0 ? 'shadow-amber-500/20' : 'shadow-slate-400/10',
-      filter: 'overdue' as FilterTab,
-    },
-    {
       title: 'Casos Críticos',
       value: criticalClients,
       subtitle: criticalClients > 0 ? 'Atenção prioritária' : 'Nenhum caso',
@@ -134,12 +125,12 @@ export default function HomePage() {
       filter: 'critical' as FilterTab,
     },
     {
-      title: 'Parcelas Acumuladas',
-      value: totalInstallments,
-      subtitle: 'Somatório de atrasos',
-      icon: FileText,
-      gradient: 'from-indigo-500 to-violet-500',
-      shadowColor: 'shadow-indigo-500/20',
+      title: 'Inadimplentes',
+      value: totalOverdue,
+      subtitle: totalClients > 0 ? `${Math.round((totalOverdue / Math.max(totalClients, 1)) * 100)}% da carteira` : 'Nenhum cliente',
+      icon: UserX,
+      gradient: totalOverdue > 0 ? 'from-amber-500 to-orange-500' : 'from-slate-400 to-slate-500',
+      shadowColor: totalOverdue > 0 ? 'shadow-amber-500/20' : 'shadow-slate-400/10',
       filter: 'overdue' as FilterTab,
     },
     {
@@ -150,6 +141,15 @@ export default function HomePage() {
       gradient: totalNewClients > 0 ? 'from-fuchsia-500 to-purple-600' : 'from-slate-400 to-slate-500',
       shadowColor: totalNewClients > 0 ? 'shadow-fuchsia-500/20' : 'shadow-slate-400/10',
       filter: 'new' as FilterTab,
+    },
+    {
+      title: 'Parcelas Acumuladas',
+      value: totalInstallments,
+      subtitle: 'Somatório de atrasos',
+      icon: FileText,
+      gradient: 'from-indigo-500 to-violet-500',
+      shadowColor: 'shadow-indigo-500/20',
+      filter: 'overdue' as FilterTab,
     },
   ];
 
@@ -301,7 +301,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6 lg:grid-cols-6">
         {kpiCards.map((kpi) => (
           <button
             key={kpi.title}
