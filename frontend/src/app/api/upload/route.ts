@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { ID, InputFile } from 'node-appwrite';
+import { ID } from 'node-appwrite';
+import { InputFile } from 'node-appwrite/file';
 import { appwriteServer, BUCKET_ID } from '@/lib/appwriteServer';
 
 export async function POST(request: Request) {
