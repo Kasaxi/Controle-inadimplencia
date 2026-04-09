@@ -1,4 +1,4 @@
-import { Client, Databases, Storage, ID } from 'node-appwrite';
+import { Client, Databases, Storage, ID, Permission, Role } from 'node-appwrite';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
@@ -144,15 +144,24 @@ async function setupContact() {
 }
 
 async function setupBucket() {
-    try {
-        await storage.getBucket('documents');
-        console.log('Bucket documents already exists.');
-    } catch {
-        console.log('Creating Bucket documents...');
-        // allow 50mb files
-        await storage.createBucket('documents', 'Documents', [], false, true, 50000000);
-        console.log('Bucket documents created.');
-    }
+  const permissions = [
+    Permission.read(Role.any()),
+    Permission.create(Role.any()),
+    Permission.update(Role.any()),
+    Permission.delete(Role.any()),
+  ];
+
+  try {
+    await storage.getBucket('documents');
+    console.log('Updating Bucket permissions...');
+    await storage.updateBucket('documents', 'Documents', permissions, false, true);
+    console.log('Bucket documents permissions updated.');
+  } catch {
+    console.log('Creating Bucket documents...');
+    // allow 50mb files
+    await storage.createBucket('documents', 'Documents', permissions, false, true, 50000000);
+    console.log('Bucket documents created.');
+  }
 }
 
 async function run() {
