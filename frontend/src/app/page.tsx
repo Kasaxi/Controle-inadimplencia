@@ -38,9 +38,9 @@ export default function HomePage() {
 
   // Fetch stats (always for total, regardless of filters)
   const settings = loadSettings();
-  const { data: stats } = useClientStats(debouncedSearch, settings.criticalThreshold);
+  const { data: stats, refetch: refetchStats, isFetching: isFetchingStats } = useClientStats(debouncedSearch, settings.criticalThreshold);
 
-  const { data: response, isLoading, refetch, isFetching } = useClients({
+  const { data: response, isLoading, refetch, isFetching: isFetchingClients } = useClients({
     page,
     limit,
     search: debouncedSearch,
@@ -283,12 +283,15 @@ export default function HomePage() {
           <Button 
             variant="outline"
             size="icon"
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={() => {
+              refetch();
+              refetchStats();
+            }}
+            disabled={isFetchingClients || isFetchingStats}
             className="w-10 h-10 rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all group"
             title="Atualizar dados"
           >
-            <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 text-slate-500 group-hover:text-slate-700 ${isFetchingClients || isFetchingStats ? 'animate-spin' : ''}`} />
           </Button>
           <Button onClick={() => { refetchWaContacts(); setIsWhatsappModalOpen(true); }} className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all text-white border-0 rounded-xl px-4">
             <MessageSquare className="h-4 w-4" />
@@ -379,7 +382,10 @@ export default function HomePage() {
               onEdit={handleOpenForm}
               onDelete={handleDeleteClick}
               onViewContract={handleViewContract}
-              onRefresh={() => refetch()}
+              onRefresh={() => {
+                refetch();
+                refetchStats();
+              }}
               sortBy={sortBy}
               sortDir={sortDir}
               onSort={handleSort}

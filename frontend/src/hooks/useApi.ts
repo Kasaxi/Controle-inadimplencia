@@ -22,6 +22,8 @@ import type { ClientCreateInput, ClientUpdateInput, NotificationFilters } from "
 export const queryKeys = {
   clients: (params?: PaginationParams) => ["clients", params] as const,
   clientsAll: ["clients"] as const,
+  stats: (search?: string, criticalThreshold?: number) => ["clientStats", search, criticalThreshold] as const,
+  statsAll: ["clientStats"] as const,
   notifications: (filters?: NotificationFilters) => ["notifications", filters] as const,
   unreadCount: ["unreadCount"] as const,
 };
@@ -36,7 +38,7 @@ export function useClients(params?: PaginationParams) {
 
 export function useClientStats(search?: string, criticalThreshold?: number) {
   return useQuery({
-    queryKey: ['clientStats', search, criticalThreshold] as const,
+    queryKey: queryKeys.stats(search, criticalThreshold),
     queryFn: () => getClientStats(search, criticalThreshold),
   });
 }
@@ -48,6 +50,7 @@ export function useCreateClient() {
     mutationFn: (data: ClientCreateInput) => createClient(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.statsAll });
     },
   });
 }
@@ -60,6 +63,7 @@ export function useUpdateClient() {
       updateClient(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.statsAll });
     },
   });
 }
@@ -71,6 +75,7 @@ export function useDeleteClient() {
     mutationFn: (id: string) => deleteClient(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.clientsAll });
+      queryClient.invalidateQueries({ queryKey: queryKeys.statsAll });
     },
   });
 }
