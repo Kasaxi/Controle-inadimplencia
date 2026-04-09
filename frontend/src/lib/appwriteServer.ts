@@ -17,6 +17,7 @@ function createAdminClient() {
 }
 
 export const appwriteServer = createAdminClient();
+export const BUCKET_ID = 'documents';
 export const DB_ID = 'main_db';
 export const CLIENTS_ID = 'Client';
 export const NOTIFICATIONS_ID = 'Notification';
