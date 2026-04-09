@@ -1,5 +1,10 @@
 import { Client, Databases, Storage, ID } from 'node-appwrite';
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env first, then .env.local (standard Next.js behavior)
+config();
+config({ path: resolve(process.cwd(), '.env.local') });
 
 // Load variables from .env.local if not available
 const { NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT, APPWRITE_API_KEY } = process.env;
@@ -106,6 +111,9 @@ async function setupClient() {
   await attrDatetime(c, 'createdAt', false);
   await attrDatetime(c, 'updatedAt', false);
   await attrBool(c, 'isNewClient', false, true);
+  await attrBool(c, 'p1Paid', false, false);
+  await attrBool(c, 'p2Paid', false, false);
+  await attrBool(c, 'p3Paid', false, false);
 
   // Allow time for attributes to be created before indexing
   await wait(3000);
