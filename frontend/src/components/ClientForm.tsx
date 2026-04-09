@@ -11,6 +11,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { createClient, updateClient } from '@/services/api';
+import { appwriteStorage, BUCKET_ID, ID } from '@/lib/appwriteClient';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import type { ClientCreateInput, ClientUpdateInput } from '@/types';
@@ -74,21 +75,14 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
             };
 
             if (file) {
-                const uploadFormData = new FormData();
-                uploadFormData.append('file', file);
+                const response = await appwriteStorage.createFile(
+                    BUCKET_ID,
+                    ID.unique(),
+                    file
+                );
 
-                const uploadResp = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: uploadFormData
-                });
-
-                if (!uploadResp.ok) {
-                    const uploadError = await uploadResp.json();
-                    throw new Error(uploadError.error || 'Erro no upload do arquivo');
-                }
-
-                const uploadData = await uploadResp.json();
-                clientData.fileUrl = uploadData.fileUrl;
+                const fileUrlResult = appwriteStorage.getFileView(BUCKET_ID, response.$id);
+                clientData.fileUrl = fileUrlResult.toString();
             }
 
             if (initialData?.id) {

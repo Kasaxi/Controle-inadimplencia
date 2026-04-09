@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { ID } from 'node-appwrite';
-import { InputFile } from 'node-appwrite/file';
+import { ID, InputFile } from 'node-appwrite/file';
 import { appwriteServer, BUCKET_ID } from '@/lib/appwriteServer';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+// Nota: O limite físico da Vercel para funções serverless é 4.5MB.
+// Em roteamento App Router, o limite é gerenciado pela plataforma.
 
 export async function POST(request: Request) {
     try {
