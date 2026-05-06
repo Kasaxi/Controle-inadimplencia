@@ -5,18 +5,16 @@ const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 
-if (!accountId || !accessKeyId || !secretAccessKey) {
-  throw new Error("Missing Cloudflare R2 environment variables");
-}
-
-export const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
-});
+export const r2 = accountId && accessKeyId && secretAccessKey 
+  ? new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+    })
+  : null;
 
 export const BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
 export const PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
@@ -36,6 +34,10 @@ export async function generatePresignedUrl(
     Key: uniqueFileName,
     ContentType: contentType,
   });
+
+  if (!r2) {
+    throw new Error("Cloudflare R2 is not configured. Check environment variables.");
+  }
 
   const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 3600 }); // 1 hour expiry
 
