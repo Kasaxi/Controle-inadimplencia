@@ -1,4 +1,25 @@
-// Rota desativada - Agora usamos upload direto via SDK no frontend
-export async function POST() {
-    return new Response('Upload via API desativado em favor do upload direto.', { status: 404 });
+import { NextResponse } from "next/server";
+import { generatePresignedUrl } from "@/lib/r2";
+
+export async function POST(request: Request) {
+  try {
+    const { fileName, contentType } = await request.json();
+
+    if (!fileName || !contentType) {
+      return NextResponse.json(
+        { error: "fileName and contentType are required" },
+        { status: 400 }
+      );
+    }
+
+    const { uploadUrl, fileUrl } = await generatePresignedUrl(fileName, contentType);
+
+    return NextResponse.json({ uploadUrl, fileUrl });
+  } catch (error) {
+    console.error("Error generating presigned URL:", error);
+    return NextResponse.json(
+      { error: "Failed to generate presigned URL" },
+      { status: 500 }
+    );
+  }
 }

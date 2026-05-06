@@ -11,7 +11,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { createClient, updateClient } from '@/services/api';
-import { appwriteStorage, BUCKET_ID, ID } from '@/lib/appwriteClient';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import type { ClientCreateInput, ClientUpdateInput } from '@/types';
@@ -75,14 +74,33 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
             };
 
             if (file) {
-                const response = await appwriteStorage.createFile(
-                    BUCKET_ID,
-                    ID.unique(),
-                    file
-                );
+                // Get presigned URL
+                const presignedRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type,
+                    })
+                });
 
-                const fileUrlResult = appwriteStorage.getFileView(BUCKET_ID, response.$id);
-                clientData.fileUrl = fileUrlResult.toString();
+                if (!presignedRes.ok) {
+                    const errRes = await presignedRes.json().catch(() => ({}));
+                    throw new Error(errRes.error || "Falha ao gerar URL de upload");
+                }
+                
+                const { uploadUrl, fileUrl } = await presignedRes.json();
+
+                // Upload directly to R2
+                const uploadRes = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': file.type },
+                    body: file,
+                });
+
+                if (!uploadRes.ok) throw new Error("Falha no upload para o Storage");
+
+                clientData.fileUrl = fileUrl;
             }
 
             if (initialData?.id) {
