@@ -36,7 +36,14 @@ export async function generatePresignedUrl(
   });
 
   if (!r2) {
-    throw new Error("Cloudflare R2 is not configured. Check environment variables.");
+    const missing = [];
+    if (!process.env.R2_ACCOUNT_ID) missing.push("R2_ACCOUNT_ID");
+    if (!process.env.R2_ACCESS_KEY_ID) missing.push("R2_ACCESS_KEY_ID");
+    if (!process.env.R2_SECRET_ACCESS_KEY) missing.push("R2_SECRET_ACCESS_KEY");
+    
+    const errorMsg = `Cloudflare R2 is not configured. Missing: ${missing.join(", ")}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
   const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 3600 }); // 1 hour expiry

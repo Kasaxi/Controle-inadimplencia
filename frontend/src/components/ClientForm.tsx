@@ -86,7 +86,10 @@ export function ClientForm({ initialData, onSuccess, onCancel }: ClientFormProps
 
                 if (!presignedRes.ok) {
                     const errRes = await presignedRes.json().catch(() => ({}));
-                    throw new Error(errRes.error || "Falha ao gerar URL de upload");
+                    const errorMsg = errRes.details 
+                        ? `${errRes.error}: ${errRes.details}` 
+                        : (errRes.error || "Falha ao gerar URL de upload");
+                    throw new Error(errorMsg);
                 }
                 
                 const { uploadUrl, fileUrl } = await presignedRes.json();
