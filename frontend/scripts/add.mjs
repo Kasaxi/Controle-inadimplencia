@@ -27,7 +27,7 @@ async function addAttributes() {
   const collection = 'Client';
   console.log('Adding boolean attributes...');
   
-  for (const attr of ['p1Paid', 'p2Paid', 'p3Paid']) {
+  for (const attr of ['p1Paid', 'p2Paid', 'p3Paid', 'p4Paid', 'p5Paid', 'p6Paid']) {
       try {
         await databases.createBooleanAttribute(DB_ID, collection, attr, false, false);
         console.log(`Created ${attr}`);

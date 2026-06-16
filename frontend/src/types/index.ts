@@ -14,6 +14,9 @@ export interface Client {
   p1Paid: boolean;
   p2Paid: boolean;
   p3Paid: boolean;
+  p4Paid: boolean;
+  p5Paid: boolean;
+  p6Paid: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +35,9 @@ export interface ClientCreateInput {
   p1Paid?: boolean;
   p2Paid?: boolean;
   p3Paid?: boolean;
+  p4Paid?: boolean;
+  p5Paid?: boolean;
+  p6Paid?: boolean;
 }
 
 export interface ClientUpdateInput {
@@ -49,6 +55,9 @@ export interface ClientUpdateInput {
   p1Paid?: boolean;
   p2Paid?: boolean;
   p3Paid?: boolean;
+  p4Paid?: boolean;
+  p5Paid?: boolean;
+  p6Paid?: boolean;
 }
 
 export type NotificationType = 'critical' | 'warning' | 'info';

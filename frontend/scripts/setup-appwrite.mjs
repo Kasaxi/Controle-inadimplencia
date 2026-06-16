@@ -114,6 +114,9 @@ async function setupClient() {
   await attrBool(c, 'p1Paid', false, false);
   await attrBool(c, 'p2Paid', false, false);
   await attrBool(c, 'p3Paid', false, false);
+  await attrBool(c, 'p4Paid', false, false);
+  await attrBool(c, 'p5Paid', false, false);
+  await attrBool(c, 'p6Paid', false, false);
 
   // Allow time for attributes to be created before indexing
   await wait(3000);

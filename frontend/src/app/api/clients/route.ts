@@ -99,6 +99,9 @@ export async function POST(request: Request) {
             p1Paid: body.p1Paid === true,
             p2Paid: body.p2Paid === true,
             p3Paid: body.p3Paid === true,
+            p4Paid: body.p4Paid === true,
+            p5Paid: body.p5Paid === true,
+            p6Paid: body.p6Paid === true,
             createdAt: now,
             updatedAt: now,
         };

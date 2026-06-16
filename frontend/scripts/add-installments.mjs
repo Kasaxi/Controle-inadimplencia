@@ -14,29 +14,15 @@ const DB_ID = 'main_db';
 async function addAttributes() {
   const collection = 'Client';
   console.log('Adding boolean attributes...');
-  
-  try {
-    await databases.createBooleanAttribute(DB_ID, collection, 'p1Paid', false, false);
-    console.log('Created p1Paid');
-  } catch (e) {
-    if (e.code !== 409) console.error(`Error on p1Paid:`, e.message);
-    else console.log('p1Paid already exists');
-  }
 
-  try {
-    await databases.createBooleanAttribute(DB_ID, collection, 'p2Paid', false, false);
-    console.log('Created p2Paid');
-  } catch (e) {
-    if (e.code !== 409) console.error(`Error on p2Paid:`, e.message);
-    else console.log('p2Paid already exists');
-  }
-
-  try {
-    await databases.createBooleanAttribute(DB_ID, collection, 'p3Paid', false, false);
-    console.log('Created p3Paid');
-  } catch (e) {
-    if (e.code !== 409) console.error(`Error on p3Paid:`, e.message);
-    else console.log('p3Paid already exists');
+  for (const key of ['p1Paid', 'p2Paid', 'p3Paid', 'p4Paid', 'p5Paid', 'p6Paid']) {
+    try {
+      await databases.createBooleanAttribute(DB_ID, collection, key, false, false);
+      console.log(`Created ${key}`);
+    } catch (e) {
+      if (e.code !== 409) console.error(`Error on ${key}:`, e.message);
+      else console.log(`${key} already exists`);
+    }
   }
 }
 

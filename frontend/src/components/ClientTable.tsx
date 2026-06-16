@@ -47,7 +47,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     consultationDate: 140,
     observation: 200,
     fileUrl: 120,
-    firstInstallments: 110,
+    firstInstallments: 215,
     actions: 140,
 };
 
@@ -223,27 +223,27 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         }
     };
 
-    const handleInstallmentToggle = async (client: Client, installment: 1 | 2 | 3) => {
+    const handleInstallmentToggle = async (client: Client, installment: 1 | 2 | 3 | 4 | 5 | 6) => {
         if (!client.isNewClient) return;
 
         const key = `p${installment}Paid`;
         const currentVal = client[key as keyof Client] as boolean;
         const newVal = !currentVal;
-        
+
         const payload: Record<string, boolean> = { [key]: newVal };
-        
-        const futureP1 = installment === 1 ? newVal : client.p1Paid;
-        const futureP2 = installment === 2 ? newVal : client.p2Paid;
-        const futureP3 = installment === 3 ? newVal : client.p3Paid;
-        
-        if (futureP1 && futureP2 && futureP3) {
+
+        const allPaid = ([1, 2, 3, 4, 5, 6] as const).every((n) =>
+            n === installment ? newVal : (client[`p${n}Paid` as keyof Client] as boolean)
+        );
+
+        if (allPaid) {
             payload.isNewClient = false;
         }
-        
+
         try {
             await updateClient(String(client.id), payload as any);
             if (payload.isNewClient === false) {
-                toast.success(`Parabéns! ${client.name} fez os 3 pagamentos e não é mais "Novo".`);
+                toast.success(`Parabéns! ${client.name} fez os 6 pagamentos e não é mais "Novo".`);
             } else {
                 toast.success(`A parcela ${installment} de ${client.name} foi atualizada!`);
             }
@@ -269,7 +269,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         { key: 'consultationDate', label: 'Última Consulta' },
         { key: 'observation', label: 'Observações' },
         { key: 'fileUrl', label: 'Contrato' },
-        { key: 'firstInstallments', label: '3 Primeiras' },
+        { key: 'firstInstallments', label: '6 Primeiras' },
         { key: 'actions', label: 'Ações' },
     ];
 
@@ -430,10 +430,10 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                         <span className="text-slate-300 text-xs">Sem arquivo</span>
                                     )}
                                 </td>
-                                {/* 3 Primeiras */}
+                                {/* 6 Primeiras */}
                                 <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60 text-center">
                                     <div className="flex justify-center gap-1.5">
-                                        {[1, 2, 3].map(num => {
+                                        {[1, 2, 3, 4, 5, 6].map(num => {
                                             const paid = client[`p${num}Paid` as keyof Client] as boolean;
                                             const disabled = !client.isNewClient;
                                             
@@ -451,7 +451,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                             return (
                                                 <button
                                                     key={num}
-                                                    onClick={() => !disabled && handleInstallmentToggle(client, num as 1|2|3)}
+                                                    onClick={() => !disabled && handleInstallmentToggle(client, num as 1|2|3|4|5|6)}
                                                     disabled={disabled}
                                                     className={`w-7 h-7 rounded-md text-[11px] font-medium transition-all flex items-center justify-center ${btnClasses}`}
                                                     title={disabled ? (paid ? `Parcela ${num} paga` : `Parcela ${num} não paga`) : `Marcar/desmarcar parcela ${num}`}
