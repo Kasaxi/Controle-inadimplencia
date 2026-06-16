@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Trash2, Edit2, Check } from 'lucide-react';
 import { updateClient } from '@/services/api';
 import { toast } from 'sonner';
 import type { Client } from '@/types';
@@ -47,7 +47,7 @@ const DEFAULT_WIDTHS: Record<string, number> = {
     consultationDate: 140,
     observation: 200,
     fileUrl: 120,
-    firstInstallments: 215,
+    firstInstallments: 150,
     actions: 140,
 };
 
@@ -431,36 +431,46 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                     )}
                                 </td>
                                 {/* 6 Primeiras */}
-                                <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60 text-center">
-                                    <div className="flex justify-center gap-1.5">
-                                        {[1, 2, 3, 4, 5, 6].map(num => {
-                                            const paid = client[`p${num}Paid` as keyof Client] as boolean;
-                                            const disabled = !client.isNewClient;
-                                            
-                                            let btnClasses = '';
-                                            if (disabled) {
-                                                btnClasses = paid
-                                                    ? 'bg-slate-200 text-slate-400 border-transparent cursor-not-allowed' 
-                                                    : 'bg-slate-50 text-slate-300 border-slate-200 cursor-not-allowed';
-                                            } else {
-                                                btnClasses = paid 
-                                                    ? 'bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-600 font-bold hover:brightness-110 cursor-pointer' 
-                                                    : 'bg-white text-slate-400 border border-slate-300 hover:border-emerald-400 hover:text-emerald-500 hover:bg-emerald-50 shadow-sm cursor-pointer';
-                                            }
+                                <td className="px-4 py-3 whitespace-nowrap border-r border-slate-200/60">
+                                    {(() => {
+                                        const disabled = !client.isNewClient;
+                                        const paidCount = [1, 2, 3, 4, 5, 6].filter(n => client[`p${n}Paid` as keyof Client] as boolean).length;
+                                        const complete = paidCount === 6;
+                                        return (
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex flex-1 gap-0.5">
+                                                    {[1, 2, 3, 4, 5, 6].map(num => {
+                                                        const paid = client[`p${num}Paid` as keyof Client] as boolean;
 
-                                            return (
-                                                <button
-                                                    key={num}
-                                                    onClick={() => !disabled && handleInstallmentToggle(client, num as 1|2|3|4|5|6)}
-                                                    disabled={disabled}
-                                                    className={`w-7 h-7 rounded-md text-[11px] font-medium transition-all flex items-center justify-center ${btnClasses}`}
-                                                    title={disabled ? (paid ? `Parcela ${num} paga` : `Parcela ${num} não paga`) : `Marcar/desmarcar parcela ${num}`}
-                                                >
-                                                    {num}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                                        let segClasses = '';
+                                                        if (disabled) {
+                                                            segClasses = paid
+                                                                ? 'bg-emerald-300 cursor-not-allowed'
+                                                                : 'bg-slate-100 cursor-not-allowed';
+                                                        } else {
+                                                            segClasses = paid
+                                                                ? 'bg-emerald-500 hover:bg-emerald-600 cursor-pointer'
+                                                                : 'bg-slate-200 hover:bg-emerald-200 cursor-pointer';
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={num}
+                                                                onClick={() => !disabled && handleInstallmentToggle(client, num as 1|2|3|4|5|6)}
+                                                                disabled={disabled}
+                                                                className={`h-3 flex-1 rounded-full transition-colors ${segClasses}`}
+                                                                title={disabled ? (paid ? `Parcela ${num} paga` : `Parcela ${num} não paga`) : `Marcar/desmarcar parcela ${num}`}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                                <span className={`flex items-center gap-0.5 text-[11px] font-semibold tabular-nums ${complete ? 'text-emerald-600' : 'text-slate-500'}`}>
+                                                    {complete && <Check className="w-3 h-3" />}
+                                                    {paidCount}/6
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
                                 </td>
                                 {/* Ações */}
                                 <td className="px-4 py-3 text-right whitespace-nowrap">
