@@ -13,7 +13,7 @@ import { useClients, useDeleteClient, useClientStats, useWhatsAppContacts, useCr
 import type { Client } from '@/types';
 
 type FilterTab = 'all' | 'overdue' | 'current' | 'critical' | 'new';
-type SortKey = 'name' | 'cpf' | 'contactNumber' | 'overdueInstallments' | 'responsible' | 'createdAt';
+type SortKey = 'name' | 'cpf' | 'contactNumber' | 'overdueInstallments' | 'responsible' | 'createdAt' | 'firstInstallmentsPaidCount';
 type SortDir = 'asc' | 'desc';
 
 export default function HomePage() {

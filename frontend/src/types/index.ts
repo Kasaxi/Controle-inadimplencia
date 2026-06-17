@@ -17,6 +17,7 @@ export interface Client {
   p4Paid: boolean;
   p5Paid: boolean;
   p6Paid: boolean;
+  firstInstallmentsPaidCount: number;
   createdAt: string;
   updatedAt: string;
 }

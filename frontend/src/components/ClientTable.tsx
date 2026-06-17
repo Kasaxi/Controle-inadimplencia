@@ -269,7 +269,7 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
         { key: 'consultationDate', label: 'Última Consulta' },
         { key: 'observation', label: 'Observações' },
         { key: 'fileUrl', label: 'Contrato' },
-        { key: 'firstInstallments', label: '6 Primeiras' },
+        { key: 'firstInstallments', label: '6 Primeiras', sortKey: 'firstInstallmentsPaidCount' },
         { key: 'actions', label: 'Ações' },
     ];
 
@@ -282,7 +282,8 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                     <tr className="border-b border-slate-200 bg-slate-50/80">
                         {columns.map((col, idx) => {
                             const width = colWidths[col.key] || DEFAULT_WIDTHS[col.key];
-                            const isSortable = col.key !== 'fileUrl' && col.key !== 'actions' && col.key !== 'firstInstallments';
+                            const isSortable = col.key !== 'fileUrl' && col.key !== 'actions';
+                            const sortTarget = ((col as { sortKey?: string }).sortKey ?? col.key) as SortKey;
                             const isLast = idx === columns.length - 1;
                             return (
                                 <th
@@ -294,10 +295,10 @@ export function ClientTable({ clients, onEdit, onViewContract, onRefresh, onDele
                                 >
                                     <div
                                         className={`flex items-center ${isSortable ? 'cursor-pointer hover:text-slate-900' : ''}`}
-                                        onClick={() => isSortable && handleSort(col.key as SortKey)}
+                                        onClick={() => isSortable && handleSort(sortTarget)}
                                     >
                                         {col.label}
-                                        {isSortable && <SortIcon col={col.key as SortKey} />}
+                                        {isSortable && <SortIcon col={sortTarget} />}
                                     </div>
                                     {col.key !== 'actions' && (
                                         <div

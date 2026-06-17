@@ -42,6 +42,16 @@ export async function PUT(request: Request, context: RouteParams) {
             }
         });
 
+        // Keep firstInstallmentsPaidCount in sync whenever any installment flag changes.
+        const installmentKeys = ['p1Paid', 'p2Paid', 'p3Paid', 'p4Paid', 'p5Paid', 'p6Paid'] as const;
+        if (installmentKeys.some(k => updateData[k] !== undefined)) {
+            const current = await appwriteServer.databases.getDocument(DB_ID, CLIENTS_ID, id);
+            mappedUpdate.firstInstallmentsPaidCount = installmentKeys.filter(k => {
+                const incoming = updateData[k];
+                return incoming !== undefined ? incoming === true : (current as Record<string, unknown>)[k] === true;
+            }).length;
+        }
+
         const doc = await appwriteServer.databases.updateDocument(
             DB_ID,
             CLIENTS_ID,

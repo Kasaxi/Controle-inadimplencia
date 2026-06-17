@@ -102,6 +102,7 @@ export async function POST(request: Request) {
             p4Paid: body.p4Paid === true,
             p5Paid: body.p5Paid === true,
             p6Paid: body.p6Paid === true,
+            firstInstallmentsPaidCount: [body.p1Paid, body.p2Paid, body.p3Paid, body.p4Paid, body.p5Paid, body.p6Paid].filter(v => v === true).length,
             createdAt: now,
             updatedAt: now,
         };

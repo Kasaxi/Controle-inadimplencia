@@ -117,6 +117,7 @@ async function setupClient() {
   await attrBool(c, 'p4Paid', false, false);
   await attrBool(c, 'p5Paid', false, false);
   await attrBool(c, 'p6Paid', false, false);
+  await attrInt(c, 'firstInstallmentsPaidCount', false, 0);
 
   // Allow time for attributes to be created before indexing
   await wait(3000);
@@ -132,6 +133,7 @@ async function setupClient() {
       ['idx_responsible', 'responsible'],
       ['idx_contactNumber', 'contactNumber'],
       ['idx_createdAt', 'createdAt'],
+      ['idx_firstInstallmentsPaidCount', 'firstInstallmentsPaidCount'],
   ];
   for (const [key, attr] of sortIndexes) {
       try {
