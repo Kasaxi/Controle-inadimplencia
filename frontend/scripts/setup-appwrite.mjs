@@ -124,6 +124,21 @@ async function setupClient() {
       await databases.createIndex(DB_ID, c, 'idx_cpf', 'unique', ['cpf']);
       console.log('Created index on CPF');
   } catch(e) { if(e.code !== 409) console.error(e.message); }
+
+  // Key indexes required so the table can sort by these columns
+  const sortIndexes = [
+      ['idx_overdueInstallments', 'overdueInstallments'],
+      ['idx_name', 'name'],
+      ['idx_responsible', 'responsible'],
+      ['idx_contactNumber', 'contactNumber'],
+      ['idx_createdAt', 'createdAt'],
+  ];
+  for (const [key, attr] of sortIndexes) {
+      try {
+          await databases.createIndex(DB_ID, c, key, 'key', [attr]);
+          console.log(`Created index on ${attr}`);
+      } catch(e) { if(e.code !== 409) console.error(`Error on ${key}:`, e.message); }
+  }
 }
 
 async function setupNotification() {
